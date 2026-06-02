@@ -1,26 +1,27 @@
-from fastapi import APIRouter
-from pydantic import BaseModel
+from fastapi import APIRouter, HTTPException
+from app.schemas.game import MoveRequest, CreateGameRequest
+from app.services.singletons import game_manager
+from app.api.deps import get_game_or_404
 
 router = APIRouter()
 
 
-class MoveRequest(BaseModel):
-    move: str
+@router.post("/create")
+def create_game(req: CreateGameRequest):
+    game_id = game_manager.create_game(req.color)
+    return {"game_id": game_id}
 
 
-@router.get("/state")
-def state():
-    return {
-        "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
-        "yourColor": "white"
-    }
+@router.get("/{game_id}/state")
+def state(game_id: str):
+    return get_game_or_404(game_id).state()
 
 
-@router.post("/move")
-def move():
+@router.post("/{game_id}/move")
+def move(game_id: str, req: MoveRequest):
     pass
 
 
-@router.post("/reset")
-def reset():
+@router.post("/{game_id}/reset")
+def reset(game_id: str):
     pass

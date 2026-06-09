@@ -1,6 +1,6 @@
 import { useState } from "react"
-import type { Board } from "../engine/board"
-import { movePiece } from "../engine/move"
+import type { Board } from "../logic/board"
+import { movePiece } from "../logic/move"
 
 
 type Dragging = {
@@ -42,10 +42,10 @@ export function useChessDrag(board: Board) {
     })
   }
 
-  function onPointerUp(row: number, col: number) {
+  function onPointerUp(gameId: string, row: number, col: number) {
     if (!dragging) return
 
-    movePiece(board, [dragging.row, dragging.col], [row, col])
+    movePiece(gameId, board, [dragging.row, dragging.col], [row, col])
 
     setDragging(null)
   }

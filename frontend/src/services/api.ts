@@ -1,15 +1,28 @@
 const API_URL = "http://localhost:8000"
 
 
-export async function getState() {
-  const response = await fetch(`${API_URL}/state`)
+export async function newGame(playerColor: "white" | "black") {
+  const response = await fetch(`${API_URL}/create`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ playerColor }),
+  })
 
   return response.json()
 }
 
 
-export async function makeMove(move: string) {
-  const response = await fetch(`${API_URL}/move`, {
+export async function getState(gameId: string) {
+  const response = await fetch(`${API_URL}/${gameId}/state`)
+
+  return response.json()
+}
+
+
+export async function makeMove(gameId: string, move: string) {
+  const response = await fetch(`${API_URL}/${gameId}/move`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -21,8 +34,8 @@ export async function makeMove(move: string) {
 }
 
 
-export async function resetGame() {
-  const response = await fetch(`${API_URL}/reset`, {
+export async function resetGame(gameId: string) {
+  const response = await fetch(`${API_URL}/${gameId}/reset`, {
     method: "POST",
   })
 

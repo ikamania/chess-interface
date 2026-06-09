@@ -1,16 +1,14 @@
-import ChessBoard from "../components/board/ChessBoard"
-import { useGame } from "../hooks/useGame"
+import { Routes, Route } from "react-router-dom"
+import Home from "../pages/Home"
+import Game from "../pages/Game"
 
 
 function App() {
-  const { board, state } = useGame()
-
-  if (!board || !state) return "No board provided"
-
   return (
-    <div className="pt-[2rem] pl-[2rem]">
-      <ChessBoard board={board} orientation={state.yourColor}/>
-    </div>
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/game/:id" element={<Game />} />
+    </Routes>
   )
 }
 

@@ -7,4 +7,4 @@ class MoveRequest(BaseModel):
 
 
 class CreateGameRequest(BaseModel):
-    color: Color
+    playerColor: Color

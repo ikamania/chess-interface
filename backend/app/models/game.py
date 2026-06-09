@@ -1,12 +1,12 @@
 from app.core.c_engine import send
 from app.schemas.types import Color
 
-START_FEN = "startpos"
+START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 
 
 class Game:
-    def __init__(self, color: Color) -> None:
-        self.color = color
+    def __init__(self, player_color: Color) -> None:
+        self.player_color = player_color
         self.fen: str = START_FEN
         self.history: list[str] = []
 
@@ -14,6 +14,7 @@ class Game:
 
     def state(self):
         return {
+            "playerColor": self.player_color,
             "fen": self.fen,
             "history": self.history
         }
@@ -29,7 +30,7 @@ class Game:
     def make_move(self, move: str):
         turn = self.current_turn()
 
-        if turn != self.color:
+        if turn != self.player_color:
             return {
                 "ok": False,
             }

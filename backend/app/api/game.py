@@ -8,7 +8,7 @@ router = APIRouter()
 
 @router.post("/create")
 def create_game(req: CreateGameRequest):
-    game_id = game_manager.create_game(req.color)
+    game_id = game_manager.create_game(req.playerColor)
     return {"game_id": game_id}
 
 

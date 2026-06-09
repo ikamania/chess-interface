@@ -7,9 +7,9 @@ class GameManager:
     def __init__(self) -> None:
         self.games: dict[str, Game] = {}
 
-    def create_game(self, color: Color) -> str:
+    def create_game(self, player_color: Color) -> str:
         game_id = str(uuid.uuid4())
-        self.games[game_id] = Game(color=color)
+        self.games[game_id] = Game(player_color=player_color)
 
         return game_id
 

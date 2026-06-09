@@ -6,6 +6,5 @@ export function isValidMove(
   from: [number, number],
   to: [number, number],
 ): boolean {
-  console.log("isValidMove")
   return false
 }

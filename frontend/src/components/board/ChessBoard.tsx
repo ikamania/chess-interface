@@ -1,16 +1,17 @@
-import type { Board } from "../../engine/board"
+import type { Board } from "../../logic/board"
 import Square from "./Square"
 import Piece from "./Piece"
 import { useChessDrag } from "../../hooks/useChessDrag"
 
 
 type Props = {
+  gameId: string
   board: Board
   orientation: "white" | "black"
 }
 
 
-export default function ChessBoard({ board, orientation }: Props) {
+export default function ChessBoard({ gameId, board, orientation }: Props) {
   const {
     dragging,
     onPointerDown,
@@ -46,7 +47,7 @@ export default function ChessBoard({ board, orientation }: Props) {
                 isDark={isDark}
                 piece={hidden ? null : piece}
                 onPointerDown={(e) => onPointerDown(e, viewR, viewC, piece)}
-                onPointerUp={() => onPointerUp(viewR, viewC)}
+                onPointerUp={() => onPointerUp(gameId, viewR, viewC)}
               />
             );
           })}

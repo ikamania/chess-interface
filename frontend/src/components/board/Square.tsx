@@ -1,6 +1,5 @@
 import Piece from "./Piece"
-import type { Piece as PieceType } from "../../engine/board"
-
+import type { Piece as PieceType } from "../../logic/board"
 
 
 type Props = {

@@ -5,10 +5,12 @@ import Game from "../pages/Game"
 
 function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/game/:id" element={<Game />} />
-    </Routes>
+    <div className="flex justify-center">
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/game/:id" element={<Game />} />
+      </Routes>
+    </div>
   )
 }
 

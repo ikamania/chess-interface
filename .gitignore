@@ -53,3 +53,5 @@ a.out
 
 # Build tools
 compile_commands.json
+
+*.sqlite3

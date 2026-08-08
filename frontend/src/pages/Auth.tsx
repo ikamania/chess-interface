@@ -1,7 +1,44 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
+import { login, register } from "../auth/AuthContext"
 
 function Auth() {
   const [isLogin, setIsLogin] = useState(true)
+
+  const [username, setUsername] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+
+  const navigate = useNavigate()
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+
+    try {
+      if (isLogin) {
+        const data = await login({
+          email,
+          password
+        })
+
+        localStorage.setItem("access", data.access)
+        localStorage.setItem("refresh", data.refresh)
+      } else {
+        const data = await register({
+          username,
+          email,
+          password
+        })
+
+        localStorage.setItem("access", data.access)
+        localStorage.setItem("refresh", data.refresh)
+      }
+
+      navigate("/")
+    } catch (error) {
+      console.log(error)
+    }
+  }
 
   return (
     <main className="flex min-h-screen justify-center bg-white px-6 pt-[7rem]">
@@ -16,12 +53,13 @@ function Auth() {
             : "Create an account to continue."}
         </p>
 
-        <form className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
             <input
               type="text"
               placeholder="Username"
               className="w-full border-b border-neutral-300 py-3 outline-none focus:border-black"
+              onChange={(e) => setUsername(e.target.value)}
             />
           )}
 
@@ -29,12 +67,14 @@ function Auth() {
             type="email"
             placeholder="Email"
             className="w-full border-b border-neutral-300 py-3 outline-none focus:border-black"
+            onChange={(e) => setEmail(e.target.value)}
           />
 
           <input
             type="password"
             placeholder="Password"
             className="w-full border-b border-neutral-300 py-3 outline-none focus:border-black"
+            onChange={(e) => setPassword(e.target.value)}
           />
 
           <button className="mt-4 w-full rounded-md bg-black py-3 text-white transition hover:opacity-90">

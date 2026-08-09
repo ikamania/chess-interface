@@ -1,10 +1,33 @@
+import { useEffect, useState } from "react"
 import { Navigate, Outlet } from "react-router-dom"
+import { refreshAccessToken } from "../auth/AuthContext"
 
 function ProtectedRoute() {
-  const token = localStorage.getItem("access")
+  const [loading, setLoading] = useState(true)
 
-  if (!token) {
-    return <Navigate to="/auth" replace/>
+  useEffect(() => {
+    async function checkAuthentication() {
+      const access = localStorage.getItem("access")
+      const refresh = localStorage.getItem("refresh")
+
+      if (!access && refresh) {
+        await refreshAccessToken()
+      }
+
+      setLoading(false)
+    }
+
+    checkAuthentication()
+  }, [])
+
+  if (loading) {
+    return null
+  }
+
+  const access = localStorage.getItem("access")
+
+  if (!access) {
+    return <Navigate to="/auth" replace />
   }
 
   return <Outlet />

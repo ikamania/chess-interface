@@ -60,3 +60,34 @@ export async function register(
 
   return response.json()
 }
+
+export async function refreshAccessToken(): Promise<string | null> {
+  const refresh = localStorage.getItem("refresh")
+
+  if (!refresh) {
+    return null
+  }
+
+  const response = await fetch(`${API_URL}/refresh/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      refresh
+    })
+  })
+
+  if (!response.ok) {
+    localStorage.removeItem("access")
+    localStorage.removeItem("refresh")
+
+    return null
+  }
+
+  const data = await response.json()
+
+  localStorage.setItem("access", data.access)
+
+  return data.access
+}

@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react"
-import { useParams } from "react-router-dom"
-import { getUserProfile, type UserProfile } from "../auth/auth"
+import { useNavigate, useParams } from "react-router-dom"
+import { getUserProfile, logout, type UserProfile } from "../auth/auth"
 
 function Profile() {
   const { username } = useParams()
+  const navigate = useNavigate()
+
   const [user, setUser] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -31,30 +33,36 @@ function Profile() {
     fetchUser()
   }, [username])
 
+  function handleLogout() {
+    logout()
+    navigate("/auth")
+  }
+
   if (loading) {
     return null
   }
 
   if (error) {
-    return (
-      <div className="py-[1rem] flex justify-center">
-          <p className="text-[3rem] font-bold">
-            {error}
-          </p>
-      </div>
-    )
+    return <p>{error}</p>
   }
 
   return (
-    <div className="p-[2rem]">
-      <h1 className="text-[2rem] font-semibold">
+    <main className="min-h-screen bg-white px-[2rem] py-[1.5rem]">
+      <button
+        onClick={handleLogout}
+        className="absolute right-[2rem] top-[1.5rem] font-bold"
+      >
+        Logout
+      </button>
+
+      <h1 className="text-[2rem] font-semibold tracking-tight">
         {user?.username}
       </h1>
 
       <p className="mt-[0.1rem] text-neutral-500">
         {user?.email}
       </p>
-    </div>
+    </main>
   )
 }
 

@@ -1,7 +1,8 @@
 import { Routes, Route } from "react-router-dom"
 import ProtectedRoute from "../auth/ProtectedRoute"
 import Home from "../pages/Home"
-import Auth from "../pages/Auth.tsx"
+import Auth from "../pages/Auth"
+import Profile from "../pages/Profile"
 
 function App() {
   return (
@@ -11,6 +12,7 @@ function App() {
 
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Home />} />
+          <Route path="/:username" element={<Profile />} />
         </Route>
       </Routes>
     </div>

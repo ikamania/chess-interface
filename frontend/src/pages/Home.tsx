@@ -1,63 +1,58 @@
 import { useNavigate } from "react-router-dom"
+import { useAuth } from "../auth/AuthContext"
 
 function Home() {
+  const { user } = useAuth()
   const navigate = useNavigate()
 
   return (
-    <main className="min-h-screen bg-white text-black">
-      <nav className="mx-auto flex h-20 max-w-7xl items-center justify-between px-8">
+    <main className="min-h-screen bg-white">
+      <nav className="mx-auto flex max-w-[80rem] items-center justify-between px-[2rem] py-[1.5rem]">
         <button
           onClick={() => navigate("/")}
-          className="text-2xl font-semibold tracking-tight transition-opacity hover:opacity-70"
+          className="text-[1.5rem] font-semibold tracking-tight"
         >
           Knightly
         </button>
 
-        <div className="flex items-center gap-10 text-base">
-          <button
-            onClick={() => navigate("/")}
-            className="transition-colors duration-200 hover:text-neutral-500"
-          >
+        <div className="flex items-center gap-[2.5rem] text-[1rem]">
+          <button onClick={() => navigate("/")}>
             Play
           </button>
 
-          <button
-            onClick={() => navigate("/puzzles")}
-            className="transition-colors duration-200 hover:text-neutral-500"
-          >
+          <button onClick={() => navigate("/puzzles")}>
             Puzzles
           </button>
 
           <button
-            onClick={() => navigate("/puzzles")}
-            className="transition-colors duration-200 hover:text-neutral-500"
+            onClick={() => navigate(`/${user?.username}`)}
           >
-            Profile
+            {user?.username}
           </button>
         </div>
       </nav>
 
-      <section className="mx-auto flex max-w-7xl flex-col items-center gap-20 px-8 py-32 lg:flex-row">
-        <div className="max-w-xl">
-          <h1 className="text-7xl font-semibold tracking-tight">
+      <section className="mx-auto flex max-w-[80rem] flex-col items-center gap-[5rem] px-[2rem] py-[8rem] lg:flex-row">
+        <div className="max-w-[36rem]">
+          <h1 className="text-[4.5rem] font-semibold tracking-tight">
             Play chess.
           </h1>
 
-          <p className="mt-8 text-xl text-neutral-600">
+          <p className="mt-[2rem] text-[1.25rem] text-neutral-600">
             Simple, fast and beautiful.
           </p>
 
-          <div className="mt-12 flex gap-4">
+          <div className="mt-[3rem] flex gap-[1rem]">
             <button
               onClick={() => navigate("/play")}
-              className="rounded-lg bg-black px-8 py-4 text-lg text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-neutral-800 active:translate-y-0 active:scale-95"
+              className="rounded-[0.5rem] bg-black px-[2rem] py-[1rem] text-[1.125rem] text-white"
             >
               Play Online
             </button>
 
             <button
               onClick={() => navigate("/play/computer")}
-              className="rounded-lg border border-neutral-300 px-8 py-4 text-lg transition-all duration-200 hover:-translate-y-0.5 hover:border-black hover:bg-neutral-100 active:translate-y-0 active:scale-95"
+              className="rounded-[0.5rem] border border-neutral-300 px-[2rem] py-[1rem] text-[1.125rem]"
             >
               Play Computer
             </button>

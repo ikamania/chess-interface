@@ -26,8 +26,7 @@ export async function login(data: LoginData): Promise<AuthResponse> {
   })
 
   if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.detail || "Login failed")
+    throw new Error("Invalid email or password")
   }
 
   return response.json()
@@ -36,6 +35,10 @@ export async function login(data: LoginData): Promise<AuthResponse> {
 export async function register(
   data: RegisterData
 ): Promise<AuthResponse> {
+  if (data.password.length < 8) {
+    throw new Error("Password must be at least 8 characters")
+  }
+
   const response = await fetch(`${API_URL}/register/`, {
     method: "POST",
     headers: {
@@ -46,7 +49,13 @@ export async function register(
 
   if (!response.ok) {
     const error = await response.json()
-    throw new Error(error.detail || "Registration failed")
+
+    throw new Error(
+      error.detail ||
+      error.email?.[0] ||
+      error.username?.[0] ||
+      "Registration failed"
+    )
   }
 
   return response.json()

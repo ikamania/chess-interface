@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
+import AuthInput from "../components/auth/AuthInput"
 import { login, register } from "../auth/AuthContext"
 
 function Auth() {
@@ -8,6 +9,7 @@ function Auth() {
   const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
 
   const navigate = useNavigate()
 
@@ -35,8 +37,8 @@ function Auth() {
       }
 
       navigate("/")
-    } catch (error) {
-      console.log(error)
+    } catch (e) {
+      setError(e.message)
     }
   }
 
@@ -53,27 +55,31 @@ function Auth() {
             : "Create an account to continue."}
         </p>
 
+        {error &&
+          ( <p className="mb-4 text-sm text-red-500"> {error} </p> )
+        }
+
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
-            <input
+            <AuthInput
               type="text"
               placeholder="Username"
-              className="w-full border-b border-neutral-300 py-3 outline-none focus:border-black"
+              value={username}
               onChange={(e) => setUsername(e.target.value)}
             />
           )}
 
-          <input
+          <AuthInput
             type="email"
             placeholder="Email"
-            className="w-full border-b border-neutral-300 py-3 outline-none focus:border-black"
+            value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
 
-          <input
+          <AuthInput
             type="password"
             placeholder="Password"
-            className="w-full border-b border-neutral-300 py-3 outline-none focus:border-black"
+            value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
 
@@ -83,7 +89,10 @@ function Auth() {
         </form>
 
         <button
-          onClick={() => setIsLogin(!isLogin)}
+          onClick={() => {
+            setIsLogin(!isLogin)
+            setError("")
+          }}
           className="mt-6 text-sm text-neutral-500 hover:text-black"
         >
           {isLogin

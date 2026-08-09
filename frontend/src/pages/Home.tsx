@@ -38,11 +38,11 @@ function Home() {
             Play chess.
           </h1>
 
-          <p className="mt-[2rem] text-[1.25rem] text-neutral-600">
+          <p className="text-[1.25rem] text-neutral-600">
             Simple, fast and beautiful.
           </p>
 
-          <div className="mt-[3rem] flex gap-[1rem]">
+          <div className="mt-[2.5rem] flex gap-[1rem]">
             <button
               onClick={() => navigate("/play")}
               className="rounded-[0.5rem] bg-black px-[2rem] py-[1rem] text-[1.125rem] text-white"

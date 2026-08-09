@@ -1,9 +1,10 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import AuthInput from "../components/auth/AuthInput"
-import { login, register } from "../auth/AuthContext"
+import { useAuth } from "../auth/AuthContext"
 
 function Auth() {
+  const { loginUser, registerUser } = useAuth()
   const [isLogin, setIsLogin] = useState(true)
 
   const [username, setUsername] = useState("")
@@ -18,7 +19,7 @@ function Auth() {
 
     try {
       if (isLogin) {
-        const data = await login({
+        const data = await loginUser({
           email,
           password
         })
@@ -26,7 +27,7 @@ function Auth() {
         localStorage.setItem("access", data.access)
         localStorage.setItem("refresh", data.refresh)
       } else {
-        const data = await register({
+        const data = await registerUser({
           username,
           email,
           password

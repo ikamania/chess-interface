@@ -27,6 +27,13 @@ function Home() {
           >
             Puzzles
           </button>
+
+          <button
+            onClick={() => navigate("/puzzles")}
+            className="transition-colors duration-200 hover:text-neutral-500"
+          >
+            Profile
+          </button>
         </div>
       </nav>
 

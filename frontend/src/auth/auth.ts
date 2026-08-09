@@ -21,6 +21,30 @@ export interface User {
   email: string
 }
 
+export interface UserProfile {
+  username: string
+  email: string
+}
+
+export async function getUserProfile(username: string): Promise<UserProfile> {
+  const access = localStorage.getItem("access")
+
+  const response = await fetch(
+    `${API_URL}/users/${username}/`,
+    {
+      headers: {
+        Authorization: `Bearer ${access}`
+      }
+    }
+  )
+
+  if (!response.ok) {
+    throw new Error("Failed to load profile")
+  }
+
+  return response.json()
+}
+
 export async function login(data: LoginData): Promise<AuthResponse> {
   const response = await fetch(`${API_URL}/login/`, {
     method: "POST",

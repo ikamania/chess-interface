@@ -2,8 +2,6 @@ import { Routes, Route } from "react-router-dom"
 import ProtectedRoute from "../auth/ProtectedRoute"
 import Home from "../pages/Home"
 import Auth from "../pages/Auth.tsx"
-import Game from "../pages/Game"
-
 
 function App() {
   return (

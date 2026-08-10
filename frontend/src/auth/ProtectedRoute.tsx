@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { Navigate, Outlet } from "react-router-dom"
-import { refreshAccessToken } from "../auth/auth"
+import { refreshAccessToken } from "../api/auth"
 
 function ProtectedRoute() {
   const [loading, setLoading] = useState(true)

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { getUserProfile, logout, type UserProfile } from "../auth/auth"
+import { getUserProfile, logout, type UserProfile } from "../api/auth"
 
 function Profile() {
   const { username } = useParams()

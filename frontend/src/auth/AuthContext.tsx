@@ -11,7 +11,7 @@ import {
   refreshAccessToken,
   register,
   type User
-} from "./auth"
+} from "../api/auth"
 
 interface AuthContextType {
   user: User | null

@@ -3,6 +3,7 @@ import ProtectedRoute from "../auth/ProtectedRoute"
 import Home from "../pages/Home"
 import Auth from "../pages/Auth"
 import Profile from "../pages/Profile"
+import Play from "../pages/Play"
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Home />} />
           <Route path="/:username" element={<Profile />} />
+          <Route path="/play" element={<Play />} />
         </Route>
       </Routes>
     </div>

@@ -48,3 +48,15 @@ export async function getGame(
 
   return response.json()
 }
+
+export function cancelGame(gameId: number) {
+  const access = localStorage.getItem("access")
+
+  fetch(`${API_URL}/${gameId}/cancel/`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${access}`,
+    },
+    keepalive: true,
+  }).catch(() => {})
+}

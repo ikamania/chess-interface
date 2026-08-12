@@ -1,11 +1,18 @@
 import random
 
+from django.contrib.auth import get_user_model
+from django.db import transaction
+from django.utils import timezone
+
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Game
+
+
+User = get_user_model()
 
 
 STARTING_FEN = (
@@ -18,46 +25,107 @@ class FindGameView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        game = (
-            Game.objects
-            .filter(
-                status=Game.Status.WAITING,
-                black_player__isnull=True,
+        with transaction.atomic():
+            user = (
+                User.objects
+                .select_for_update()
+                .get(pk=request.user.pk)
             )
-            .exclude(white_player=request.user)
-            .first()
-        )
 
-        if game:
-            if random.choice([True, False]):
-                game.black_player = request.user
-            else:
-                game.black_player = game.white_player
-                game.white_player = request.user
+            existing_game = (
+                Game.objects
+                .filter(
+                    status__in=[
+                        Game.Status.WAITING,
+                        Game.Status.ACTIVE,
+                    ]
+                )
+                .filter(
+                    white_player=user
+                )
+                .first()
+            )
 
-            game.status = Game.Status.ACTIVE
-            game.save()
+            if not existing_game:
+                existing_game = (
+                    Game.objects
+                    .filter(
+                        status__in=[
+                            Game.Status.WAITING,
+                            Game.Status.ACTIVE,
+                        ]
+                    )
+                    .filter(
+                        black_player=user
+                    )
+                    .first()
+                )
 
-            return Response({
-                "matched": True,
-                "game_id": game.id,
-                "white_player": game.white_player.username,
-                "black_player": game.black_player.username,
-            })
+            if existing_game:
+                if existing_game.status == Game.Status.ACTIVE:
+                    return Response({
+                        "matched": True,
+                        "game_id": existing_game.id,
+                        "white_player": (
+                            existing_game.white_player.username
+                            if existing_game.white_player
+                            else None
+                        ),
+                        "black_player": (
+                            existing_game.black_player.username
+                            if existing_game.black_player
+                            else None
+                        ),
+                    })
 
-        game = Game.objects.create(
-            white_player=request.user,
-            fen=STARTING_FEN,
-            status=Game.Status.WAITING,
-        )
+                return Response({
+                    "matched": False,
+                    "game_id": existing_game.id,
+                })
 
-        return Response(
-            {
-                "matched": False,
-                "game_id": game.id,
-            },
-            status=status.HTTP_201_CREATED,
-        )
+            game = (
+                Game.objects
+                .select_for_update()
+                .filter(
+                    status=Game.Status.WAITING,
+                    black_player__isnull=True,
+                )
+                .exclude(
+                    white_player=user
+                )
+                .first()
+            )
+
+            if game:
+                if random.choice([True, False]):
+                    game.black_player = user
+                else:
+                    game.black_player = game.white_player
+                    game.white_player = user
+
+                game.status = Game.Status.ACTIVE
+                game.save()
+
+                return Response({
+                    "matched": True,
+                    "game_id": game.id,
+                    "white_player": game.white_player.username,
+                    "black_player": game.black_player.username,
+                })
+
+            game = Game.objects.create(
+                white_player=user,
+                fen=STARTING_FEN,
+                status=Game.Status.WAITING,
+            )
+
+            return Response(
+                {
+                    "matched": False,
+                    "game_id": game.id,
+                },
+                status=status.HTTP_201_CREATED,
+            )
 
 
 class GameView(APIView):
@@ -81,6 +149,10 @@ class GameView(APIView):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
+        if game.status == Game.Status.WAITING:
+            game.updated_at = timezone.now()
+            game.save(update_fields=["updated_at"])
+
         return Response({
             "id": game.id,
             "status": game.status,
@@ -96,3 +168,32 @@ class GameView(APIView):
             ),
             "fen": game.fen,
         })
+
+
+class CancelGameView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, game_id):
+        try:
+            game = Game.objects.get(id=game_id)
+        except Game.DoesNotExist:
+            return Response(
+                {"detail": "Game not found"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if game.white_player != request.user:
+            return Response(
+                {"detail": "You cannot cancel this game"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if game.status != Game.Status.WAITING:
+            return Response(
+                {"detail": "Game is no longer waiting"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        game.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)

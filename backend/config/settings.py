@@ -34,6 +34,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
 ]
 
+ASGI_APPLICATION = "config.asgi.application"
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -47,7 +49,10 @@ INSTALLED_APPS = [
     'game',
     'rest_framework',
     'corsheaders',
+    'daphne',
+    'channels',
 ]
+
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (

@@ -1,24 +1,46 @@
+import { useEffect } from "react"
 import { useParams } from "react-router-dom"
-import { useGame } from "../hooks/useGame"
-import ChessBoard from "../components/board/ChessBoard"
 
 function Game() {
-  const { id } = useParams<{ id: string }>()
+  const { id } = useParams()
 
-  if (!id) return "loading"
+  useEffect(() => {
+    if (!id) {
+      return
+    }
 
-  const {
-    state,
-    board,
-  } = useGame(id ?? "")
+    const socket = new WebSocket(
+      `ws://localhost:8000/ws/game/${id}/`
+    )
 
-  if (!state || !board) return "loading"
+    socket.onopen = () => {
+      console.log("WebSocket connected")
+    }
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data)
+
+      console.log("WebSocket message:", data)
+    }
+
+    socket.onerror = (error) => {
+      console.error("WebSocket error:", error)
+    }
+
+    socket.onclose = () => {
+      console.log("WebSocket disconnected")
+    }
+
+    return () => {
+      socket.close()
+    }
+  }, [id])
 
   return (
-    <div className="pt-[5rem] pl-[2rem]">
-      <ChessBoard gameId={id} board={board} orientation={state.playerColor}/>
-    </div>
+    <main>
+      <h1>Game {id}</h1>
+    </main>
   )
 }
 
-export default Game 
+export default Game

@@ -4,6 +4,7 @@ import Home from "../pages/Home"
 import Auth from "../pages/Auth"
 import Profile from "../pages/Profile"
 import Play from "../pages/Play"
+import Game from "../pages/Game"
 
 function App() {
   return (
@@ -14,7 +15,8 @@ function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<Home />} />
           <Route path="/:username" element={<Profile />} />
-          <Route path="/play" element={<Play />} />
+          <Route path="/play" element={<Play />} />  
+          <Route path="/game/:id" element={<Game />} />
         </Route>
       </Routes>
     </div>

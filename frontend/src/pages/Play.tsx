@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { findGame, getGame } from "../api/games"
 
@@ -8,7 +8,15 @@ function Play() {
   const [gameId, setGameId] = useState<number | null>(null)
   const [error, setError] = useState("")
 
+  const startedRef = useRef(false)
+
   useEffect(() => {
+    if (startedRef.current) {
+      return
+    }
+
+    startedRef.current = true
+
     async function startGame() {
       try {
         const data = await findGame()
@@ -43,17 +51,21 @@ function Play() {
           navigate(`/game/${gameId}`)
         }
       } catch (error) {
-        console.error(error)
+        console.error("Failed to check game:", error)
       }
     }, 1000)
 
-    return () => clearInterval(interval)
+    return () => {
+      clearInterval(interval)
+    }
   }, [gameId, navigate])
 
   if (error) {
     return (
       <main className="flex min-h-screen items-center justify-center">
-        <p className="text-red-500">{error}</p>
+        <p className="text-red-500">
+          {error}
+        </p>
       </main>
     )
   }

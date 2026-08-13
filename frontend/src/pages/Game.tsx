@@ -1,16 +1,20 @@
 import { useEffect } from "react"
-import { useParams } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 
 function Game() {
   const { id } = useParams()
+  const navigate = useNavigate()
 
   useEffect(() => {
     if (!id) {
+      navigate("/play")
       return
     }
 
+    const access = localStorage.getItem("access")
+
     const socket = new WebSocket(
-      `ws://localhost:8000/ws/game/${id}/`
+      `ws://localhost:8000/ws/game/${id}/?token=${encodeURIComponent(access)}`
     )
 
     socket.onopen = () => {
@@ -20,21 +24,25 @@ function Game() {
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data)
 
-      console.log("WebSocket message:", data)
+      if (data.type === "connected") {
+        console.log(`Connected to game ${data.game_id}`)
+      }
     }
 
     socket.onerror = (error) => {
       console.error("WebSocket error:", error)
     }
 
-    socket.onclose = () => {
-      console.log("WebSocket disconnected")
+    socket.onclose = (event) => {
+      console.log("WebSocket disconnected:", event.code)
+
+      navigate("/")
     }
 
     return () => {
       socket.close()
     }
-  }, [id])
+  }, [id, navigate])
 
   return (
     <main>

@@ -36,6 +36,12 @@ CORS_ALLOWED_ORIGINS = [
 
 ASGI_APPLICATION = "config.asgi.application"
 
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
+
 # Application definition
 
 INSTALLED_APPS = [

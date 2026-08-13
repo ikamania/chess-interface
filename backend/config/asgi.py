@@ -9,22 +9,25 @@ https://docs.djangoproject.com/en/6.0/howto/deployment/asgi/
 
 import os
 
-from channels.routing import ProtocolTypeRouter, URLRouter
-from django.core.asgi import get_asgi_application
-
-from game.routing import websocket_urlpatterns
-
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
+
+
+from django.core.asgi import get_asgi_application
 
 
 django_application = get_asgi_application()
 
 
+from channels.routing import ProtocolTypeRouter, URLRouter
+from game.middleware import JWTAuthMiddleware
+from game.routing import websocket_urlpatterns
+
+
 application = ProtocolTypeRouter({
     "http": django_application,
 
-    "websocket": URLRouter(
-        websocket_urlpatterns,
+    "websocket": JWTAuthMiddleware(
+        URLRouter(websocket_urlpatterns),
     ),
 })

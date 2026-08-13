@@ -1,5 +1,6 @@
 import { useEffect } from "react"
 import { useNavigate, useParams } from "react-router-dom"
+import { getGame } from "../api/games"
 
 function Game() {
   const { id } = useParams()
@@ -7,40 +8,62 @@ function Game() {
 
   useEffect(() => {
     if (!id) {
-      navigate("/play")
+      navigate("/")
       return
     }
 
     const access = localStorage.getItem("access")
 
-    const socket = new WebSocket(
-      `ws://localhost:8000/ws/game/${id}/?token=${encodeURIComponent(access)}`
-    )
+    let socket: WebSocket | null = null
+    let cancelled = false
 
-    socket.onopen = () => {
-      console.log("WebSocket connected")
-    }
+    async function connectToGame() {
+      try {
+        const game = await getGame(Number(id))
 
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data)
+        console.log("Game:", game)
 
-      if (data.type === "connected") {
-        console.log(`Connected to game ${data.game_id}`)
+        if (cancelled) {
+          return
+        }
+
+        socket = new WebSocket(
+          `ws://localhost:8000/ws/game/${id}/?token=${encodeURIComponent(access)}`
+        )
+
+        socket.onopen = () => {
+          console.log("WebSocket connected")
+        }
+
+        socket.onmessage = (event) => {
+          const data = JSON.parse(event.data)
+
+          if (data.type === "connected") {
+            console.log(`Connected to game ${data.game_id}`)
+          }
+        }
+
+        socket.onerror = (error) => {
+          console.error("WebSocket error:", error)
+        }
+
+        socket.onclose = (event) => {
+          console.log(
+            "WebSocket disconnected:",
+            event.code
+          )
+        }
+      } catch (error) {
+        console.error("Failed to get game:", error)
+        navigate("/")
       }
     }
 
-    socket.onerror = (error) => {
-      console.error("WebSocket error:", error)
-    }
-
-    socket.onclose = (event) => {
-      console.log("WebSocket disconnected:", event.code)
-
-      navigate("/")
-    }
+    connectToGame()
 
     return () => {
-      socket.close()
+      cancelled = true
+      socket?.close()
     }
   }, [id, navigate])
 

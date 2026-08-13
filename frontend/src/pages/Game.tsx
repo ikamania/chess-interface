@@ -1,10 +1,12 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { getGame } from "../api/games"
 
 function Game() {
   const { id } = useParams()
   const navigate = useNavigate()
+
+  const socketRef = useRef<WebSocket | null>(null)
 
   useEffect(() => {
     if (!id) {
@@ -14,22 +16,21 @@ function Game() {
 
     const access = localStorage.getItem("access")
 
-    let socket: WebSocket | null = null
     let cancelled = false
 
     async function connectToGame() {
       try {
-        const game = await getGame(Number(id))
-
-        console.log("Game:", game)
+        await getGame(Number(id))
 
         if (cancelled) {
           return
         }
 
-        socket = new WebSocket(
+        const socket = new WebSocket(
           `ws://localhost:8000/ws/game/${id}/?token=${encodeURIComponent(access)}`
         )
+
+        socketRef.current = socket
 
         socket.onopen = () => {
           console.log("WebSocket connected")
@@ -38,9 +39,7 @@ function Game() {
         socket.onmessage = (event) => {
           const data = JSON.parse(event.data)
 
-          if (data.type === "connected") {
-            console.log(`Connected to game ${data.game_id}`)
-          }
+          console.log("WebSocket message:", data)
         }
 
         socket.onerror = (error) => {
@@ -54,7 +53,7 @@ function Game() {
           )
         }
       } catch (error) {
-        console.error("Failed to get game:", error)
+        console.error("Failed to connect to game:", error)
         navigate("/")
       }
     }
@@ -63,13 +62,35 @@ function Game() {
 
     return () => {
       cancelled = true
-      socket?.close()
+
+      socketRef.current?.close()
+      socketRef.current = null
     }
   }, [id, navigate])
+
+  function sendTestMessage() {
+    const socket = socketRef.current
+
+    if (!socket || socket.readyState !== WebSocket.OPEN) {
+      console.error("WebSocket is not connected")
+      return
+    }
+
+    socket.send(
+      JSON.stringify({
+        type: "test",
+        message: "Hello from player!",
+      })
+    )
+  }
 
   return (
     <main>
       <h1>Game {id}</h1>
+
+      <button onClick={sendTestMessage}>
+        Send test message
+      </button>
     </main>
   )
 }

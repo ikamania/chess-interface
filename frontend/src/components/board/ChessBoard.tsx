@@ -2,6 +2,7 @@ import type { Board } from "../../logic/board"
 import Square from "./Square"
 import Piece from "./Piece"
 import { useChessDrag } from "../../hooks/useChessDrag"
+import Loading from "../../pages/Loading"
 
 
 type Props = {
@@ -20,7 +21,9 @@ export default function ChessBoard({ gameId, board, orientation }: Props) {
     cancelDrag,
   } = useChessDrag(board)
 
-  if (!board) return null
+  if (!board) return (
+    <Loading />
+  )
 
   return (
     <div

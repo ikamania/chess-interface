@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { findGame, getGame } from "../api/games"
+import Loading from "./Loading"
 
 function Play() {
   const navigate = useNavigate()
@@ -71,17 +72,7 @@ function Play() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center">
-      <div className="text-center">
-        <h1 className="text-[2rem] font-semibold">
-          Finding opponent...
-        </h1>
-
-        <p className="mt-[1rem] text-neutral-500">
-          Waiting for another player
-        </p>
-      </div>
-    </main>
+    <Loading message={"Finding opponent..."} />
   )
 }
 

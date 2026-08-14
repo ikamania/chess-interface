@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { getUserProfile, logout, type UserProfile } from "../api/auth"
+import Loading from "./Loading"
 
 function Profile() {
   const { username } = useParams()
@@ -39,11 +40,12 @@ function Profile() {
   }
 
   if (loading) {
-    return null
+    <Loading />
   }
-
   if (error) {
-    return <p>{error}</p>
+    return (
+      <Loading message={error} />
+    )
   }
 
   return (

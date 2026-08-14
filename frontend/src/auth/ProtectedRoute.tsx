@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { Navigate, Outlet } from "react-router-dom"
 import { refreshAccessToken } from "../api/auth"
+import Loading from "../pages/Loading"
 
 function ProtectedRoute() {
   const [loading, setLoading] = useState(true)
@@ -21,7 +22,9 @@ function ProtectedRoute() {
   }, [])
 
   if (loading) {
-    return null
+    return (
+      <Loading />
+    )
   }
 
   const access = localStorage.getItem("access")

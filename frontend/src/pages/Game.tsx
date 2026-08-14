@@ -4,6 +4,7 @@ import { sendGameMessage } from "../websocket/gameSocket"
 import ChessBoard from "../components/board/ChessBoard"
 import type { Board } from "../logic/board"
 import { parseFEN } from "../utils/fen"
+import Loading from "./Loading"
 
 function Game() {
   const { id } = useParams()
@@ -67,9 +68,7 @@ function Game() {
 
   if (!board) {
     return (
-      <main className="flex min-h-screen items-center justify-center">
-        <p>Loading game...</p>
-      </main>
+      <Loading message={"Loading GAME..."} />
     )
   }
 

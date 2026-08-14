@@ -6,7 +6,13 @@ from .models import Game
 
 class GameConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
-        self.game_id = self.scope["url_route"]["kwargs"]["game_id"]
+        url_route = self.scope.get("url_route")
+
+        if not url_route:
+            await self.close(code=4000)
+            return
+
+        self.game_id = url_route["kwargs"]["game_id"]
         self.user = self.scope.get("user")
 
         if not self.user or not self.user.is_authenticated:

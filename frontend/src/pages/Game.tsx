@@ -1,12 +1,17 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { getGame } from "../api/games"
+import ChessBoard from "../components/board/ChessBoard"
+import type { Board } from "../logic/board"
+import { parseFEN } from "../utils/fen"
 
 function Game() {
   const { id } = useParams()
   const navigate = useNavigate()
 
   const socketRef = useRef<WebSocket | null>(null)
+
+  const [board, setBoard] = useState<Board | null>(null)
+  const [color, setColor] = useState<"white" | "black">("white")
 
   useEffect(() => {
     if (!id) {
@@ -16,81 +21,47 @@ function Game() {
 
     const access = localStorage.getItem("access")
 
-    let cancelled = false
+    if (!access) {
+      navigate("/")
+      return
+    }
 
-    async function connectToGame() {
-      try {
-        await getGame(Number(id))
+    const socket = new WebSocket(
+      `ws://localhost:8000/ws/game/${id}/?token=${encodeURIComponent(access)}`
+    )
 
-        if (cancelled) {
-          return
-        }
+    socketRef.current = socket
 
-        const socket = new WebSocket(
-          `ws://localhost:8000/ws/game/${id}/?token=${encodeURIComponent(access)}`
-        )
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data)
 
-        socketRef.current = socket
-
-        socket.onopen = () => {
-          console.log("WebSocket connected")
-        }
-
-        socket.onmessage = (event) => {
-          const data = JSON.parse(event.data)
-
-          console.log("WebSocket message:", data)
-        }
-
-        socket.onerror = (error) => {
-          console.error("WebSocket error:", error)
-        }
-
-        socket.onclose = (event) => {
-          console.log(
-            "WebSocket disconnected:",
-            event.code
-          )
-        }
-      } catch (error) {
-        console.error("Failed to connect to game:", error)
-        navigate("/")
+      if (data.type === "game_state") {
+        setBoard(parseFEN(data.fen))
+        setColor(data.color)
       }
     }
 
-    connectToGame()
-
     return () => {
-      cancelled = true
-
-      socketRef.current?.close()
+      socket.close()
       socketRef.current = null
     }
   }, [id, navigate])
 
-  function sendTestMessage() {
-    const socket = socketRef.current
-
-    if (!socket || socket.readyState !== WebSocket.OPEN) {
-      console.error("WebSocket is not connected")
-      return
-    }
-
-    socket.send(
-      JSON.stringify({
-        type: "test",
-        message: "Hello from player!",
-      })
+  if (!board) {
+    return (
+      <main className="flex min-h-screen items-center justify-center">
+        <p>Loading game...</p>
+      </main>
     )
   }
 
   return (
-    <main>
-      <h1>Game {id}</h1>
-
-      <button onClick={sendTestMessage}>
-        Send test message
-      </button>
+    <main className="flex min-h-screen items-center justify-center">
+      <ChessBoard
+        gameId={id!}
+        board={board}
+        orientation={color}
+      />
     </main>
   )
 }

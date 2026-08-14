@@ -19,11 +19,18 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             await self.close(code=4004)
             return
 
-        if (
-            self.user.id not in [game.white_player_id, game.black_player_id]
-        ):
+        if self.user.id not in [
+            game.white_player_id,
+            game.black_player_id,
+        ]:
             await self.close(code=4003)
             return
+
+        self.player_color = (
+            "white"
+            if game.white_player_id == self.user.id
+            else "black"
+        )
 
         self.game_group_name = f"game_{self.game_id}"
 
@@ -34,17 +41,12 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
 
         await self.accept()
 
-        player_color = (
-            "white"
-            if game.white_player_id == self.user.id
-            else "black"
-        )
-
         await self.send_json({
             "type": "game_state",
             "game_id": self.game_id,
             "fen": game.fen,
-            "color": player_color,
+            "color": self.player_color,
+            "status": game.status,
         })
 
     async def disconnect(self, close_code):
@@ -60,7 +62,7 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         if message_type == "move":
             await self.handle_move(content)
         elif message_type == "draw":
-            await self.handle_draw(content)
+            await self.handle_draw()
         elif message_type == "resign":
             await self.handle_resign()
         else:
@@ -80,19 +82,41 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             })
             return
 
-        # mian proccess
+        # Move processing will go here
 
-    async def handle_draw(self, content):
+    async def handle_draw(self):
         return
 
     async def handle_resign(self):
-        return
+        game = await self.get_game()
+
+        if not game:
+            return
+        if game.status != Game.Status.ACTIVE:
+            return
+
+        winner = (
+            "black"
+            if self.player_color == "white"
+            else "white"
+        )
+
+        await self.end_game()
+
+        await self.channel_layer.group_send(
+            self.game_group_name,
+            {
+                "type": "game_message",
+                "data": {
+                    "type": "game_over",
+                    "reason": "resignation",
+                    "winner": winner,
+                },
+            },
+        )
 
     async def game_message(self, event):
-        await self.send_json({
-            "type": "game_message",
-            "data": event["data"],
-        })
+        await self.send_json(event["data"])
 
     @database_sync_to_async
     def get_game(self):
@@ -100,3 +124,10 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             return Game.objects.get(id=self.game_id)
         except Game.DoesNotExist:
             return None
+
+    @database_sync_to_async
+    def end_game(self):
+        game = Game.objects.get(id=self.game_id)
+
+        game.status = Game.Status.FINISHED
+        game.save(update_fields=["status"])

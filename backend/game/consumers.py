@@ -39,13 +39,38 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             )
 
     async def receive_json(self, content):
-        await self.channel_layer.group_send(
-            self.game_group_name,
-            {
-                "type": "game_message",
-                "data": content,
-            },
-        )
+        message_type = content.get("type")
+
+        if message_type == "move":
+            await self.handle_move(content)
+        elif message_type == "draw":
+            await self.handle_draw(content)
+        elif message_type == "resign":
+            await self.handle_resign()
+        else:
+            await self.send_json({
+                "type": "error",
+                "messsage": "Uknown message type",
+            })
+
+    async def handle_move(self, content):
+        from_square = content.get("from")
+        to_square = content.get("to")
+
+        if not from_square or not to_square:
+            await self.send_json({
+                "type": "error",
+                "message": "move requres from and to",
+            })
+            return
+
+        # mian proccess
+
+    async def handle_draw(self, content):
+        return
+
+    async def handle_resign(self):
+        return
 
     async def game_message(self, event):
         await self.send_json({

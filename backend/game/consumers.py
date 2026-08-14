@@ -13,7 +13,15 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             await self.close(code=4001)
             return
 
-        if not await self.is_game_player():
+        game = await self.get_game()
+
+        if not game:
+            await self.close(code=4004)
+            return
+
+        if (
+            self.user.id not in [game.white_player_id, game.black_player_id]
+        ):
             await self.close(code=4003)
             return
 
@@ -26,9 +34,17 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
 
         await self.accept()
 
+        player_color = (
+            "white"
+            if game.white_player_id == self.user.id
+            else "black"
+        )
+
         await self.send_json({
-            "type": "connected",
+            "type": "game_state",
             "game_id": self.game_id,
+            "fen": game.fen,
+            "color": player_color,
         })
 
     async def disconnect(self, close_code):
@@ -50,7 +66,7 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         else:
             await self.send_json({
                 "type": "error",
-                "messsage": "Uknown message type",
+                "message": "Unknown message type",
             })
 
     async def handle_move(self, content):
@@ -60,7 +76,7 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         if not from_square or not to_square:
             await self.send_json({
                 "type": "error",
-                "message": "move requres from and to",
+                "message": "Move requires from and to",
             })
             return
 
@@ -79,13 +95,8 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         })
 
     @database_sync_to_async
-    def is_game_player(self):
+    def get_game(self):
         try:
-            game = Game.objects.get(id=self.game_id)
+            return Game.objects.get(id=self.game_id)
         except Game.DoesNotExist:
-            return False
-
-        return (
-            game.white_player_id == self.user.id
-            or game.black_player_id == self.user.id
-        )
+            return None

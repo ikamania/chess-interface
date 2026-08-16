@@ -69,6 +69,8 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             await self.handle_move(content)
         elif message_type == "draw":
             await self.handle_draw()
+        elif message_type == "draw_response":
+            await self.handle_draw_response(content)
         elif message_type == "resign":
             await self.handle_resign()
         else:
@@ -91,14 +93,69 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         # Move processing will go here
 
     async def handle_draw(self):
-        return
-
-    async def handle_resign(self):
-        game = await self.get_game()
+        game = await self.get_active_game()
 
         if not game:
             return
-        if game.status != Game.Status.ACTIVE:
+
+        await self.channel_layer.group_send(
+            self.game_group_name,
+            {
+                "type": "draw_offer",
+                "sender": self.player_color,
+            }
+        )
+
+    async def draw_offer(self, event):
+        if event["sender"] == self.player_color:
+            return
+
+        await self.send_json({
+            "type": "draw_offer"
+        })
+
+    async def handle_draw_response(self, content):
+        accepted = content.get("accepted")
+
+        if accepted is None:
+            return
+
+        game = await self.get_active_game()
+
+        if not game:
+            return
+
+        if accepted:
+            await self.end_game()
+
+            await self.channel_layer.group_send(
+                self.game_group_name,
+                {
+                    "type": "game_message",
+                    "data": {
+                        "type": "game_over",
+                        "reason": "draw",
+                        "winner": None,
+                    },
+                },
+            )
+        else:
+            await self.channel_layer.group_send(
+                self.game_group_name,
+                {
+                    "type": "draw_declined",
+                },
+            )
+
+    async def draw_declined(self, event):
+        await self.send_json({
+            "type": "draw_declined",
+        })
+
+    async def handle_resign(self):
+        game = await self.get_active_game()
+
+        if not game:
             return
 
         winner = (
@@ -123,6 +180,16 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
 
     async def game_message(self, event):
         await self.send_json(event["data"])
+
+    async def get_active_game(self):
+        game = await self.get_game()
+
+        if not game:
+            return
+        if game.status != Game.Status.ACTIVE:
+            return
+
+        return game
 
     @database_sync_to_async
     def get_game(self):

@@ -84,19 +84,7 @@ function Game() {
 
           {gameOver && (
             <div className="absolute left-1/2 top-1/2 w-[16rem] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-neutral-200 bg-white p-[1.5rem] text-center shadow-lg">
-              <h2
-                className={`text-[1.25rem] font-semibold ${
-                  gameOver.winner === color
-                    ? "text-green-600"
-                    : "text-red-500"
-                }`}
-              >
-                {gameOver.winner === color
-                  ? "Victory"
-                  : "Defeat"}
-              </h2>
-
-              <p className="mt-[0.5rem] text-sm text-neutral-500">
+              <p className="mt-[0.5rem] text-sm text-neutral-500 font-bold">
                 {gameOver.reason === "resignation"
                   ? gameOver.winner === color
                     ? "Opponent resigned"

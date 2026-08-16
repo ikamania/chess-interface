@@ -17,8 +17,12 @@ function Game() {
 
   const [gameOver, setGameOver] = useState<{
     reason: string
-    winner: "white" | "black"
+    winner: "white" | "black" | null
   } | null>(null)
+
+  const [drawOffer, setDrawOffer] = useState<
+    "none" | "sent" | "received"
+  >("none")
 
   useEffect(() => {
     if (!id) {
@@ -27,6 +31,11 @@ function Game() {
     }
 
     const access = localStorage.getItem("access")
+
+    if (!access) {
+      navigate("/")
+      return
+    }
 
     const socket = new WebSocket(
       `ws://localhost:8000/ws/game/${id}/?token=${encodeURIComponent(access)}`
@@ -38,7 +47,7 @@ function Game() {
       const data = JSON.parse(event.data)
 
       if (data.type === "game_state") {
-        if (data.status != "active") {
+        if (data.status !== "active") {
           navigate("/")
           return
         }
@@ -46,11 +55,19 @@ function Game() {
         setBoard(parseFEN(data.fen))
         setColor(data.color)
       }
+      if (data.type === "draw_offer") {
+        setDrawOffer("received")
+      }
+      if (data.type === "draw_declined") {
+        setDrawOffer("none")
+      }
       if (data.type === "game_over") {
         setGameOver({
           reason: data.reason,
-          winner: data.winner,
+          winner: data.winner ?? null,
         })
+
+        setDrawOffer("none")
       }
     }
 
@@ -66,10 +83,24 @@ function Game() {
     })
   }
 
+  function handleDraw() {
+    if (drawOffer === "none") {
+      sendMessage("draw")
+      setDrawOffer("sent")
+    }
+  }
+
+  function respondToDraw(accepted: boolean) {
+    sendGameMessage(socketRef.current, {
+      type: "draw_response",
+      accepted,
+    })
+
+    setDrawOffer("none")
+  }
+
   if (!board) {
-    return (
-      <Loading message={"Loading GAME..."} />
-    )
+    return <Loading message="Loading game..." />
   }
 
   return (
@@ -84,12 +115,14 @@ function Game() {
 
           {gameOver && (
             <div className="absolute left-1/2 top-1/2 w-[16rem] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-neutral-200 bg-white p-[1.5rem] text-center shadow-lg">
-              <p className="mt-[0.5rem] text-sm text-neutral-500 font-bold">
-                {gameOver.reason === "resignation"
-                  ? gameOver.winner === color
-                    ? "Opponent resigned"
-                    : "You resigned"
-                  : "Game over"}
+              <p className="text-sm font-bold text-neutral-500">
+                {gameOver.reason === "draw"
+                  ? "Draw"
+                  : gameOver.reason === "resignation"
+                    ? gameOver.winner === color
+                      ? "Opponent resigned"
+                      : "You resigned"
+                    : "Game over"}
               </p>
 
               <button
@@ -103,13 +136,37 @@ function Game() {
         </div>
 
         <div className="flex w-[8rem] flex-col gap-[0.75rem]">
-          <button
-            onClick={() => sendMessage("draw")}
-            disabled={!!gameOver}
-            className="w-full rounded-md border border-neutral-300 px-[1rem] py-[0.5rem] text-sm transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Draw
-          </button>
+          {drawOffer === "received" ? (
+            <div className="flex w-full overflow-hidden rounded-md border border-neutral-300">
+              <button
+                onClick={() => respondToDraw(true)}
+                disabled={!!gameOver}
+                className="flex-1 px-[0.5rem] py-[0.5rem] text-sm transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Accept draw"
+              >
+                ✓
+              </button>
+
+              <button
+                onClick={() => respondToDraw(false)}
+                disabled={!!gameOver}
+                className="flex-1 border-l border-neutral-300 px-[0.5rem] py-[0.5rem] text-sm transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-50"
+                aria-label="Decline draw"
+              >
+                x
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleDraw}
+              disabled={!!gameOver || drawOffer === "sent"}
+              className="w-full rounded-md border border-neutral-300 px-[1rem] py-[0.5rem] text-sm transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {drawOffer === "sent"
+                ? "Offered"
+                : "Draw"}
+            </button>
+          )}
 
           <button
             onClick={() => sendMessage("resign")}

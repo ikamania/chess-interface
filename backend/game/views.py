@@ -2,7 +2,7 @@ import random
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from django.contrib.auth import get_user_model
+from django.db.models import Q
 
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -10,9 +10,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .models import Game
-
-
-User = get_user_model()
 
 
 STARTING_FEN = (
@@ -25,7 +22,7 @@ class FindGameView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        user = User.objects.get(pk=request.user.pk)
+        user = request.user
 
         existing_game = (
             Game.objects
@@ -34,22 +31,12 @@ class FindGameView(APIView):
                     Game.Status.WAITING,
                     Game.Status.ACTIVE,
                 ],
-                white_player=user,
+            )
+            .filter(
+                Q(white_player=user) | Q(black_player=user)
             )
             .first()
         )
-        if not existing_game:
-            existing_game = (
-                Game.objects
-                .filter(
-                    status__in=[
-                        Game.Status.WAITING,
-                        Game.Status.ACTIVE,
-                    ],
-                    black_player=user,
-                )
-                .first()
-            )
 
         if existing_game:
             if existing_game.status == Game.Status.ACTIVE:

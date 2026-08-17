@@ -126,7 +126,7 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             return
 
         if accepted:
-            await self.end_game()
+            await self.end_game(game)
 
             await self.channel_layer.group_send(
                 self.game_group_name,
@@ -164,7 +164,7 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             else "white"
         )
 
-        await self.end_game()
+        await self.end_game(game)
 
         await self.channel_layer.group_send(
             self.game_group_name,
@@ -199,8 +199,6 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             return None
 
     @database_sync_to_async
-    def end_game(self):
-        game = Game.objects.get(id=self.game_id)
-
+    def end_game(self, game):
         game.status = Game.Status.FINISHED
         game.save(update_fields=["status"])

@@ -2,6 +2,10 @@ from urllib.parse import parse_qs
 
 from channels.db import database_sync_to_async
 from channels.middleware import BaseMiddleware
+from django.contrib.auth import get_user_model
+from rest_framework_simplejwt.tokens import AccessToken
+
+User = get_user_model()
 
 
 class JWTAuthMiddleware(BaseMiddleware):
@@ -19,13 +23,8 @@ class JWTAuthMiddleware(BaseMiddleware):
             return await self.app(scope, receive, send)
 
         try:
-            from rest_framework_simplejwt.tokens import AccessToken
-
             access_token = AccessToken(token)
-
-            user = await self.get_user(
-                access_token["user_id"]
-            )
+            user = await self.get_user(access_token["user_id"])
             scope["user"] = user
         except Exception:
             scope["user"] = None
@@ -34,8 +33,4 @@ class JWTAuthMiddleware(BaseMiddleware):
 
     @database_sync_to_async
     def get_user(self, user_id):
-        from django.contrib.auth import get_user_model
-
-        User = get_user_model()
-
         return User.objects.get(id=user_id)

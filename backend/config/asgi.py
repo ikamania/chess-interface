@@ -20,12 +20,13 @@ django_application = get_asgi_application()
 
 
 from channels.routing import ProtocolTypeRouter, URLRouter
+from django.contrib.staticfiles.handlers import ASGIStaticFilesHandler
 from game.middleware import JWTAuthMiddleware
 from game.routing import websocket_urlpatterns
 
 
 application = ProtocolTypeRouter({
-    "http": django_application,
+    "http": ASGIStaticFilesHandler(django_application),
 
     "websocket": JWTAuthMiddleware(
         URLRouter(websocket_urlpatterns),

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { sendGameMessage } from "../websocket/gameSocket"
+import { GAME_WS_URL } from "../config"
 import ChessBoard from "../components/board/ChessBoard"
 import type { Board } from "../logic/board"
 import { parseFEN } from "../utils/fen"
@@ -38,7 +39,7 @@ function Game() {
     }
 
     const socket = new WebSocket(
-      `ws://localhost:8000/ws/game/${id}/?token=${encodeURIComponent(access)}`
+      `${GAME_WS_URL}/${id}/?token=${encodeURIComponent(access)}`
     )
 
     socketRef.current = socket

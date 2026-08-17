@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:8000/games"
+import { GAMES_API_URL as API_URL } from "../config"
 
 export interface FindGameResponse {
   matched: boolean

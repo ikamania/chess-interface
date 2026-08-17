@@ -1,4 +1,4 @@
-const API_URL = "http://localhost:8000/auth"
+import { API_URL } from "../config"
 
 export interface LoginData {
   email: string

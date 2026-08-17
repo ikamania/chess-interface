@@ -1,3 +1,5 @@
+import { MATCHMAKING_WS_URL } from "../config"
+
 export function createMatchmakingSocket(
   onOpen: () => void,
   onMessage: (data: any) => void,
@@ -6,9 +8,7 @@ export function createMatchmakingSocket(
   const access = localStorage.getItem("access")
 
   const socket = new WebSocket(
-    `ws://localhost:8000/ws/matchmaking/?token=${encodeURIComponent(
-      access ?? ""
-    )}`
+    `${MATCHMAKING_WS_URL}/?token=${encodeURIComponent(access ?? "")}`
   )
 
   let connected = false

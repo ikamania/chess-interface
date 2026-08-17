@@ -1,4 +1,4 @@
-import type { Board } from "../engine/board"
+import type { Board } from "../logic/board"
 
 
 export function parseFEN(fen: string): Board{

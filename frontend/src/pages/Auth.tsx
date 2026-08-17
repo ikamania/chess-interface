@@ -19,22 +19,16 @@ function Auth() {
 
     try {
       if (isLogin) {
-        const data = await loginUser({
+        await loginUser({
           email,
           password
         })
-
-        localStorage.setItem("access", data.access)
-        localStorage.setItem("refresh", data.refresh)
       } else {
-        const data = await registerUser({
+        await registerUser({
           username,
           email,
           password
         })
-
-        localStorage.setItem("access", data.access)
-        localStorage.setItem("refresh", data.refresh)
       }
 
       navigate("/")

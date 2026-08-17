@@ -39,14 +39,9 @@ function Profile() {
     navigate("/auth")
   }
 
-  if (loading) {
-    <Loading />
-  }
-  if (error) {
-    return (
-      <Loading message={error} />
-    )
-  }
+  if (loading) return <Loading />
+
+  if (error) return <Loading message={error} />
 
   return (
     <main className="min-h-screen px-[2rem] py-[1.5rem]">

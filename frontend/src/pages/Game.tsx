@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { sendGameMessage } from "../websocket/gameSocket"
-import { GAME_WS_URL } from "../config"
+import { createGameSocket } from "../websocket/gameSocket"
 import ChessBoard from "../components/board/ChessBoard"
 import type { Board } from "../logic/board"
 import { parseFEN } from "../utils/fen"
@@ -11,7 +10,7 @@ function Game() {
   const { id } = useParams()
   const navigate = useNavigate()
 
-  const socketRef = useRef<WebSocket | null>(null)
+  const socketRef = useRef<ReturnType<typeof createGameSocket> | null>(null)
 
   const [board, setBoard] = useState<Board | null>(null)
   const [color, setColor] = useState<"white" | "black">("white")
@@ -38,15 +37,7 @@ function Game() {
       return
     }
 
-    const socket = new WebSocket(
-      `${GAME_WS_URL}/${id}/?token=${encodeURIComponent(access)}`
-    )
-
-    socketRef.current = socket
-
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data)
-
+    const socket = createGameSocket(id, (data) => {
       if (data.type === "game_state") {
         if (data.status !== "active") {
           navigate("/")
@@ -70,7 +61,9 @@ function Game() {
 
         setDrawOffer("none")
       }
-    }
+    })
+
+    socketRef.current = socket
 
     return () => {
       socket.close()
@@ -79,9 +72,7 @@ function Game() {
   }, [id, navigate])
 
   function sendMessage(type: "draw" | "resign") {
-    sendGameMessage(socketRef.current, {
-      type,
-    })
+    socketRef.current?.send({ type })
   }
 
   function handleDraw() {
@@ -92,7 +83,7 @@ function Game() {
   }
 
   function respondToDraw(accepted: boolean) {
-    sendGameMessage(socketRef.current, {
+    socketRef.current?.send({
       type: "draw_response",
       accepted,
     })

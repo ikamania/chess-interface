@@ -1,3 +1,5 @@
+import { GAME_WS_URL } from "../config"
+
 export type GameMessage =
   | {
       type: "resign"
@@ -11,13 +13,35 @@ export type GameMessage =
       to: string
     }
 
-export function sendGameMessage(
-  socket: WebSocket | null,
-  message: GameMessage
+export function createGameSocket(
+  gameId: string,
+  onMessage: (data: any) => void
 ) {
-  if (!socket || socket.readyState !== WebSocket.OPEN) {
-    return
+  const access = localStorage.getItem("access")
+
+  const socket = new WebSocket(
+    `${GAME_WS_URL}/${gameId}/?token=${encodeURIComponent(access ?? "")}`
+  )
+
+  let closed = false
+
+  socket.onmessage = (event) => {
+    onMessage(JSON.parse(event.data))
   }
 
-  socket.send(JSON.stringify(message))
+  socket.onclose = () => {
+    closed = true
+  }
+
+  return {
+    send(message: GameMessage) {
+      if (!closed && socket.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify(message))
+      }
+    },
+    close() {
+      closed = true
+      socket.close()
+    },
+  }
 }

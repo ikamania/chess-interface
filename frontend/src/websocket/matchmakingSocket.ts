@@ -16,29 +16,21 @@ export function createMatchmakingSocket(
 
   socket.onopen = () => {
     connected = true
-    console.log("Matchmaking WebSocket connected")
     onOpen()
   }
 
   socket.onmessage = (event) => {
-    console.log("Matchmaking message:", event.data)
     onMessage(JSON.parse(event.data))
   }
 
   socket.onerror = (event) => {
-    console.error("Matchmaking WebSocket error:", event)
-
     if (!connected && !closed) {
       onError?.()
     }
   }
 
-  socket.onclose = (event) => {
-    console.log(
-      "Matchmaking WebSocket closed:",
-      event.code,
-      event.reason
-    )
+  socket.onclose = () => {
+    closed = true
   }
 
   return {

@@ -12,6 +12,7 @@ export function createMatchmakingSocket(
   )
 
   let connected = false
+  let closed = false
 
   socket.onopen = () => {
     connected = true
@@ -27,7 +28,7 @@ export function createMatchmakingSocket(
   socket.onerror = (event) => {
     console.error("Matchmaking WebSocket error:", event)
 
-    if (!connected) {
+    if (!connected && !closed) {
       onError?.()
     }
   }
@@ -40,5 +41,10 @@ export function createMatchmakingSocket(
     )
   }
 
-  return socket
+  return {
+    close() {
+      closed = true
+      socket.close()
+    },
+  }
 }

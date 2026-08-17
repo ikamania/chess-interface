@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { findGame, getGame } from "../api/games"
+import { findGame, cancelGame } from "../api/games"
+import { createMatchmakingSocket } from "../websocket/matchmakingSocket"
 import Loading from "./Loading"
 
 function Play() {
@@ -8,58 +9,67 @@ function Play() {
 
   const [gameId, setGameId] = useState<number | null>(null)
   const [error, setError] = useState("")
+  const [cancelling, setCancelling] = useState(false)
 
-  const startedRef = useRef(false)
+  const socketRef = useRef<ReturnType<typeof createMatchmakingSocket> | null>(null)
 
   useEffect(() => {
-    if (startedRef.current) {
-      return
-    }
+    const socket = createMatchmakingSocket(
+      async () => {
+        try {
+          const data = await findGame()
 
-    startedRef.current = true
+          setGameId(data.game_id)
 
-    async function startGame() {
-      try {
-        const data = await findGame()
+          if (data.matched) {
+            navigate(`/game/${data.game_id}`)
+          }
+        } catch (error) {
+          if (error instanceof Error) {
+            setError(error.message)
+          } else {
+            setError("Failed to find a game")
+          }
+        }
+      },
 
-        setGameId(data.game_id)
-
-        if (data.matched) {
+      (data) => {
+        if (data.type === "matched") {
           navigate(`/game/${data.game_id}`)
         }
-      } catch (error) {
-        if (error instanceof Error) {
-          setError(error.message)
-        } else {
-          setError("Failed to find a game")
-        }
-      }
-    }
+      },
 
-    startGame()
+      () => {
+        setError("Matchmaking connection failed")
+      }
+    )
+
+    socketRef.current = socket
+
+    return () => {
+      socket.close()
+      socketRef.current = null
+    }
   }, [navigate])
 
-  useEffect(() => {
-    if (!gameId) {
+  async function handleCancel() {
+    if (!gameId || cancelling) {
       return
     }
 
-    const interval = setInterval(async () => {
-      try {
-        const game = await getGame(gameId)
+    setCancelling(true)
 
-        if (game.status === "active") {
-          navigate(`/game/${gameId}`)
-        }
-      } catch (error) {
-        console.error("Failed to check game:", error)
-      }
-    }, 1000)
+    socketRef.current?.close()
+    socketRef.current = null
 
-    return () => {
-      clearInterval(interval)
+    try {
+      await cancelGame(gameId)
+      navigate("/")
+    } catch (error) {
+      console.error("Failed to cancel game:", error)
+      setCancelling(false)
     }
-  }, [gameId, navigate])
+  }
 
   if (error) {
     return (
@@ -71,8 +81,26 @@ function Play() {
     )
   }
 
+  if (!gameId) {
+    return <Loading message="Finding opponent..." />
+  }
+
   return (
-    <Loading message={"Finding opponent..."} />
+    <main className="flex min-h-screen items-center justify-center">
+      <div className="text-center">
+        <h1 className="text-[2rem] font-semibold">
+          Finding opponent...
+        </h1>
+
+        <button
+          onClick={handleCancel}
+          disabled={cancelling}
+          className="mt-[1.5rem] rounded-md border border-neutral-300 px-[1rem] py-[0.5rem] text-sm transition hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {cancelling ? "Cancelling..." : "Cancel"}
+        </button>
+      </div>
+    </main>
   )
 }
 

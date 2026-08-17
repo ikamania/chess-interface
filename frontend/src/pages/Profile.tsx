@@ -49,13 +49,20 @@ function Profile() {
   }
 
   return (
-    <main className="min-h-screen bg-white px-[2rem] py-[1.5rem]">
-      <button
-        onClick={handleLogout}
-        className="absolute right-[2rem] top-[1.5rem] font-bold"
-      >
-        Logout
-      </button>
+    <main className="min-h-screen px-[2rem] py-[1.5rem]">
+      <div className="flex items-center gap-[1.5rem] absolute right-[2rem] top-[1.5rem]">
+        <button
+          onClick={() => navigate("/")}
+        >
+          Home
+        </button>
+
+        <button
+          onClick={handleLogout}
+        >
+          Logout
+        </button>
+      </div>
 
       <h1 className="text-[2rem] font-semibold tracking-tight">
         {user?.username}

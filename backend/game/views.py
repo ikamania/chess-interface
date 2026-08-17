@@ -2,6 +2,7 @@ import random
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
+from django.db import transaction
 from django.db.models import Q
 
 from rest_framework import status
@@ -60,26 +61,29 @@ class FindGameView(APIView):
                 "game_id": existing_game.id,
             })
 
-        game = (
-            Game.objects
-            .filter(
-                status=Game.Status.WAITING,
-                black_player__isnull=True,
+        with transaction.atomic():
+            game = (
+                Game.objects
+                .select_for_update()
+                .filter(
+                    status=Game.Status.WAITING,
+                    black_player__isnull=True,
+                )
+                .exclude(white_player=user)
+                .first()
             )
-            .exclude(white_player=user)
-            .first()
-        )
+
+            if game:
+                if random.choice([True, False]):
+                    game.black_player = user
+                else:
+                    game.black_player = game.white_player
+                    game.white_player = user
+
+                game.status = Game.Status.ACTIVE
+                game.save()
 
         if game:
-            if random.choice([True, False]):
-                game.black_player = user
-            else:
-                game.black_player = game.white_player
-                game.white_player = user
-
-            game.status = Game.Status.ACTIVE
-            game.save()
-
             channel_layer = get_channel_layer()
 
             for player_id in [

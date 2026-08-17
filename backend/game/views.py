@@ -1,8 +1,8 @@
 import random
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.contrib.auth import get_user_model
-from django.db import transaction
-from django.utils import timezone
 
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -25,107 +25,108 @@ class FindGameView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        with transaction.atomic():
-            user = (
-                User.objects
-                .select_for_update()
-                .get(pk=request.user.pk)
-            )
+        user = User.objects.get(pk=request.user.pk)
 
+        existing_game = (
+            Game.objects
+            .filter(
+                status__in=[
+                    Game.Status.WAITING,
+                    Game.Status.ACTIVE,
+                ],
+                white_player=user,
+            )
+            .first()
+        )
+        if not existing_game:
             existing_game = (
                 Game.objects
                 .filter(
                     status__in=[
                         Game.Status.WAITING,
                         Game.Status.ACTIVE,
-                    ]
-                )
-                .filter(
-                    white_player=user
+                    ],
+                    black_player=user,
                 )
                 .first()
             )
 
-            if not existing_game:
-                existing_game = (
-                    Game.objects
-                    .filter(
-                        status__in=[
-                            Game.Status.WAITING,
-                            Game.Status.ACTIVE,
-                        ]
-                    )
-                    .filter(
-                        black_player=user
-                    )
-                    .first()
-                )
-
-            if existing_game:
-                if existing_game.status == Game.Status.ACTIVE:
-                    return Response({
-                        "matched": True,
-                        "game_id": existing_game.id,
-                        "white_player": (
-                            existing_game.white_player.username
-                            if existing_game.white_player
-                            else None
-                        ),
-                        "black_player": (
-                            existing_game.black_player.username
-                            if existing_game.black_player
-                            else None
-                        ),
-                    })
-
-                return Response({
-                    "matched": False,
-                    "game_id": existing_game.id,
-                })
-
-            game = (
-                Game.objects
-                .select_for_update()
-                .filter(
-                    status=Game.Status.WAITING,
-                    black_player__isnull=True,
-                )
-                .exclude(
-                    white_player=user
-                )
-                .first()
-            )
-
-            if game:
-                if random.choice([True, False]):
-                    game.black_player = user
-                else:
-                    game.black_player = game.white_player
-                    game.white_player = user
-
-                game.status = Game.Status.ACTIVE
-                game.save()
-
+        if existing_game:
+            if existing_game.status == Game.Status.ACTIVE:
                 return Response({
                     "matched": True,
-                    "game_id": game.id,
-                    "white_player": game.white_player.username,
-                    "black_player": game.black_player.username,
+                    "game_id": existing_game.id,
+                    "white_player": (
+                        existing_game.white_player.username
+                        if existing_game.white_player
+                        else None
+                    ),
+                    "black_player": (
+                        existing_game.black_player.username
+                        if existing_game.black_player
+                        else None
+                    ),
                 })
 
-            game = Game.objects.create(
-                white_player=user,
-                fen=STARTING_FEN,
-                status=Game.Status.WAITING,
-            )
+            return Response({
+                "matched": False,
+                "game_id": existing_game.id,
+            })
 
-            return Response(
-                {
-                    "matched": False,
-                    "game_id": game.id,
-                },
-                status=status.HTTP_201_CREATED,
+        game = (
+            Game.objects
+            .filter(
+                status=Game.Status.WAITING,
+                black_player__isnull=True,
             )
+            .exclude(white_player=user)
+            .first()
+        )
+
+        if game:
+            if random.choice([True, False]):
+                game.black_player = user
+            else:
+                game.black_player = game.white_player
+                game.white_player = user
+
+            game.status = Game.Status.ACTIVE
+            game.save()
+
+            channel_layer = get_channel_layer()
+
+            for player_id in [
+                game.white_player_id,
+                game.black_player_id,
+            ]:
+                async_to_sync(channel_layer.group_send)(
+                    f"matchmaking_{player_id}",
+                    {
+                        "type": "matched",
+                        "game_id": game.id,
+                    },
+                )
+
+            return Response({
+                "matched": True,
+                "game_id": game.id,
+                "white_player": game.white_player.username,
+                "black_player": game.black_player.username,
+            })
+
+        game = Game.objects.create(
+            white_player=user,
+            fen=STARTING_FEN,
+            status=Game.Status.WAITING,
+        )
+
+        return Response(
+            {
+                "matched": False,
+                "game_id": game.id,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class GameView(APIView):
@@ -148,10 +149,6 @@ class GameView(APIView):
                 {"detail": "You are not part of this game"},
                 status=status.HTTP_403_FORBIDDEN,
             )
-
-        if game.status == Game.Status.WAITING:
-            game.updated_at = timezone.now()
-            game.save(update_fields=["updated_at"])
 
         return Response({
             "id": game.id,

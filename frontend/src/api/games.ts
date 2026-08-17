@@ -49,14 +49,17 @@ export async function getGame(
   return response.json()
 }
 
-export function cancelGame(gameId: number) {
+export async function cancelGame(gameId: number): Promise<void> {
   const access = localStorage.getItem("access")
 
-  fetch(`${API_URL}/${gameId}/cancel/`, {
+  const response = await fetch(`${API_URL}/${gameId}/cancel`, {
     method: "DELETE",
     headers: {
       Authorization: `Bearer ${access}`,
     },
-    keepalive: true,
-  }).catch(() => {})
+  })
+
+  if (!response.ok) {
+    throw new Error("Failed to cancel game")
+  }
 }

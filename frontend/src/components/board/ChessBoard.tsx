@@ -1,29 +1,28 @@
-import type { Board } from "../../logic/board"
+import type { Chess, Color } from "chess.js"
 import Square from "./Square"
 import Piece from "./Piece"
 import { useChessDrag } from "../../hooks/useChessDrag"
-import Loading from "../../pages/Loading"
 
 
 type Props = {
-  gameId: string
-  board: Board
+  game: Chess
+  playerColor: Color
   orientation: "white" | "black"
+  onMove: (from: [number, number], to: [number, number]) => void
 }
 
 
-export default function ChessBoard({ gameId, board, orientation }: Props) {
+export default function ChessBoard({ game, playerColor, orientation, onMove }: Props) {
   const {
     dragging,
+    legalTargets,
     onPointerDown,
     onPointerMove,
     onPointerUp,
     cancelDrag,
-  } = useChessDrag(board)
+  } = useChessDrag(game, playerColor, onMove)
 
-  if (!board) return (
-    <Loading />
-  )
+  const board = game.board()
 
   return (
     <div
@@ -36,23 +35,28 @@ export default function ChessBoard({ gameId, board, orientation }: Props) {
           {board.map((_, c) => {
             const viewR = orientation === "white" ? r : 7 - r
             const viewC = orientation === "white" ? c : 7 - c
-            const piece = board[viewR][viewC]
+            const cell = board[viewR][viewC]
 
-            const isDark = (viewR + viewC) % 2 === 1;
+            const isDark = (viewR + viewC) % 2 === 1
 
             const hidden =
               dragging?.row === viewR &&
               dragging?.col === viewC
 
+            const isLegalTarget = legalTargets.some(
+              ([tr, tc]) => tr === viewR && tc === viewC
+            )
+
             return (
               <Square
                 key={`${r}-${c}`}
                 isDark={isDark}
-                piece={hidden ? null : piece}
-                onPointerDown={(e) => onPointerDown(e, viewR, viewC, piece)}
-                onPointerUp={() => onPointerUp(gameId, viewR, viewC)}
+                piece={hidden ? null : cell}
+                isLegalTarget={isLegalTarget && !!dragging}
+                onPointerDown={(e) => onPointerDown(e, viewR, viewC, cell)}
+                onPointerUp={() => onPointerUp(viewR, viewC)}
               />
-            );
+            )
           })}
         </div>
       ))}
@@ -66,7 +70,7 @@ export default function ChessBoard({ gameId, board, orientation }: Props) {
             transform: "translate(-50%, -50%)",
           }}
         >
-          <Piece piece={dragging.piece} />
+          <Piece piece={dragging.piece} color={dragging.color} />
         </div>
       )}
     </div>

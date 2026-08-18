@@ -13,6 +13,36 @@ export type GameMessage =
       to: string
     }
 
+export type ServerMessage =
+  | {
+      type: "game_state"
+      game_id: string
+      fen: string
+      color: "white" | "black"
+      status: string
+    }
+  | {
+      type: "move_made"
+      from: string
+      to: string
+    }
+  | {
+      type: "opponent_move"
+      from: string
+      to: string
+    }
+  | {
+      type: "draw_offer"
+    }
+  | {
+      type: "draw_declined"
+    }
+  | {
+      type: "game_over"
+      reason: string
+      winner: "white" | "black" | null
+    }
+
 export function createGameSocket(
   gameId: string,
   onMessage: (data: any) => void

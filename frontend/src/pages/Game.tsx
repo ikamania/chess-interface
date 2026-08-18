@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
+import { Chess } from "chess.js"
 import { createGameSocket } from "../websocket/gameSocket"
+import type { ServerMessage } from "../websocket/gameSocket"
 import ChessBoard from "../components/board/ChessBoard"
-import type { Board } from "../logic/board"
-import { parseFEN } from "../utils/fen"
+import { toSquare } from "../utils/coordinates"
 import Loading from "./Loading"
 
 function Game() {
@@ -12,7 +13,7 @@ function Game() {
 
   const socketRef = useRef<ReturnType<typeof createGameSocket> | null>(null)
 
-  const [board, setBoard] = useState<Board | null>(null)
+  const [game, setGame] = useState<Chess | null>(null)
   const [color, setColor] = useState<"white" | "black">("white")
 
   const [gameOver, setGameOver] = useState<{
@@ -37,15 +38,24 @@ function Game() {
       return
     }
 
-    const socket = createGameSocket(id, (data) => {
+    const socket = createGameSocket(id, (data: ServerMessage) => {
       if (data.type === "game_state") {
         if (data.status !== "active") {
           navigate("/")
           return
         }
 
-        setBoard(parseFEN(data.fen))
+        const chess = new Chess(data.fen)
+        setGame(chess)
         setColor(data.color)
+      }
+      if (data.type === "move_made" || data.type === "opponent_move") {
+        setGame(prev => {
+          if (!prev) return prev
+          const next = new Chess(prev.fen())
+          next.move({ from: data.from, to: data.to })
+          return next
+        })
       }
       if (data.type === "draw_offer") {
         setDrawOffer("received")
@@ -71,6 +81,20 @@ function Game() {
     }
   }, [id, navigate])
 
+  const sendMove = useCallback(
+    (from: [number, number], to: [number, number]) => {
+      const fromSq = toSquare(from[0], from[1])
+      const toSq = toSquare(to[0], to[1])
+      console.log(`Move sent: ${fromSq} -> ${toSq}`)
+      socketRef.current?.send({
+        type: "move",
+        from: fromSq,
+        to: toSq,
+      })
+    },
+    [],
+  )
+
   function sendMessage(type: "draw" | "resign") {
     socketRef.current?.send({ type })
   }
@@ -91,7 +115,7 @@ function Game() {
     setDrawOffer("none")
   }
 
-  if (!board) {
+  if (!game) {
     return <Loading message="Loading game..." />
   }
 
@@ -100,9 +124,10 @@ function Game() {
       <div className="flex items-center gap-[2rem]">
         <div className="relative">
           <ChessBoard
-            gameId={id!}
-            board={board}
+            game={game}
+            playerColor={color === "white" ? "w" : "b"}
             orientation={color}
+            onMove={sendMove}
           />
 
           {gameOver && (

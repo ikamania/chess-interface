@@ -1,35 +1,48 @@
 import { useState } from "react"
-import type { Board, Piece } from "../logic/board"
-import { movePiece } from "../logic/move"
+import type { Chess, Color, PieceSymbol } from "chess.js"
+import { isLegalMove, getLegalMoves } from "../logic/rules"
+import { fromSquare } from "../utils/coordinates"
 
 
 type Dragging = {
   row: number
   col: number
-  piece: Piece
+  piece: PieceSymbol
+  color: Color
   x: number
   y: number
 } | null
 
 
-export function useChessDrag(board: Board) {
+export function useChessDrag(
+  game: Chess,
+  playerColor: Color,
+  onMove: (from: [number, number], to: [number, number]) => void,
+) {
   const [dragging, setDragging] = useState<Dragging>(null)
+  const [legalTargets, setLegalTargets] = useState<[number, number][]>([])
 
   function onPointerDown(
     e: React.PointerEvent,
     row: number,
     col: number,
-    piece: Piece
+    cell: { type: PieceSymbol; color: Color } | null,
   ) {
-    if (!piece) return
+    if (!cell) return
+    if (cell.color !== playerColor) return
+    if (cell.color !== game.turn()) return
 
     setDragging({
       row,
       col,
-      piece,
+      piece: cell.type,
+      color: cell.color,
       x: e.clientX,
       y: e.clientY,
     })
+
+    const targets = getLegalMoves(game, [row, col]).map(m => fromSquare(m))
+    setLegalTargets(targets)
   }
 
   function onPointerMove(e: React.PointerEvent) {
@@ -42,23 +55,31 @@ export function useChessDrag(board: Board) {
     })
   }
 
-  function onPointerUp(gameId: string, row: number, col: number) {
+  function onPointerUp(row: number, col: number) {
     if (!dragging) return
 
-    movePiece(gameId, board, [dragging.row, dragging.col], [row, col])
+    const from: [number, number] = [dragging.row, dragging.col]
+    const to: [number, number] = [row, col]
+
+    if (isLegalMove(game, from, to)) {
+      onMove(from, to)
+    }
 
     setDragging(null)
+    setLegalTargets([])
   }
 
   function cancelDrag() {
     setDragging(null)
+    setLegalTargets([])
   }
 
   return {
     dragging,
+    legalTargets,
     onPointerDown,
     onPointerMove,
     onPointerUp,
-    cancelDrag
+    cancelDrag,
   }
 }

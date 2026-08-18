@@ -1,21 +1,21 @@
-import type { Board } from "../logic/board"
+import type { Board, Piece } from "../logic/board"
 
 
-export function parseFEN(fen: string): Board{
+export function parseFEN(fen: string): Board {
   const boardPart = fen.split(" ")[0]
   const boardRows = boardPart.split("/")
 
-  const board: string[][] = []
+  const board: Piece[][] = []
   for (const row of boardRows) {
-    const parsedRow: string[] = []
+    const parsedRow: Piece[] = []
 
     for (const char of row) {
       if (isNaN(Number(char))) {
-        parsedRow.push(char)
+        parsedRow.push(char as Piece)
       } else {
         const emptyCount = Number(char)
         for (let i = 0; i < emptyCount; i++) {
-          parsedRow.push("")
+          parsedRow.push(null)
         }
       }
     }

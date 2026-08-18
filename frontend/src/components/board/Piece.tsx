@@ -1,7 +1,9 @@
+import type { PieceSymbol } from "../../logic/board"
+
 const PIECES_ASSET_PATH = "/pieces/"
 
 type Props = {
-  piece: string
+  piece: PieceSymbol
 }
 
 export default function Piece({ piece }: Props) {

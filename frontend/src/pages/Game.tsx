@@ -85,7 +85,6 @@ function Game() {
     (from: [number, number], to: [number, number]) => {
       const fromSq = toSquare(from[0], from[1])
       const toSq = toSquare(to[0], to[1])
-      console.log(`Move sent: ${fromSq} -> ${toSq}`)
       socketRef.current?.send({
         type: "move",
         from: fromSq,
@@ -115,6 +114,28 @@ function Game() {
     setDrawOffer("none")
   }
 
+  const getGameOverMessage = () => {
+    if (!gameOver) return
+
+    switch (gameOver.reason) {
+      case "draw":
+        return "Draw";
+      case "stalemate":
+        return "Stalemate";
+      case "checkmate":
+        return gameOver.winner === color
+          ? "Won by checkmate"
+          : "Lost by checkmate"
+      case "resignation":
+        return gameOver.winner === color
+          ? "Opponent resigned"
+          : "You resigned"
+
+      default:
+        return "Game over"
+    }
+  }
+
   if (!game) {
     return <Loading message="Loading game..." />
   }
@@ -133,13 +154,7 @@ function Game() {
           {gameOver && (
             <div className="absolute left-1/2 top-1/2 w-[16rem] -translate-x-1/2 -translate-y-1/2 rounded-lg border border-neutral-200 bg-white p-[1.5rem] text-center shadow-lg">
               <p className="text-sm font-bold text-neutral-500">
-                {gameOver.reason === "draw"
-                  ? "Draw"
-                  : gameOver.reason === "resignation"
-                    ? gameOver.winner === color
-                      ? "Opponent resigned"
-                      : "You resigned"
-                    : "Game over"}
+                {getGameOverMessage()}
               </p>
 
               <button

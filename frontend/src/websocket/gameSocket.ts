@@ -7,6 +7,11 @@ export type GameMessage =
   | {
       type: "draw"
     }
+  |
+    {
+      type: "draw_response"
+      accepted: boolean
+    }
   | {
       type: "move"
       from: string

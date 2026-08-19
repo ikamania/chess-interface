@@ -2,6 +2,7 @@ from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 
 from .models import Game
+from .chess_logic import validate_and_apply_move
 
 
 class GameConsumer(AsyncJsonWebsocketConsumer):
@@ -94,30 +95,51 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         if not game:
             return
 
-        # validate move and change initial fen + save game moves (new model)
+        result = await self.validate_move(game.fen, from_square, to_square)
 
-        await self.send_json({
-            "type": "move_made",
-            "from": from_square,
-            "to": to_square,
-        })
-
-        await self.channel_layer.group_send(
-                self.game_group_name,
-                {
-                    "type": "opponent_move_message",
-                    "from": from_square,
-                    "to": to_square,
-                    "sender": self.player_color,
-                },
-            )
-
-    async def opponent_move_message(self, event):
-        if event["sender"] == self.player_color:
+        if not result["valid"]:
+            await self.send_json({
+                "type": "error",
+                "message": "Illegal move",
+            })
             return
 
+        await self.update_game_fen(game, result["new_fen"])
+
+        await self.channel_layer.group_send(
+            self.game_group_name,
+            {
+                "type": "move_made",
+                "from": from_square,
+                "to": to_square,
+            },
+        )
+
+        if result["is_game_over"]:
+            winner = None
+            reason = "stalemate"
+
+            if result["is_checkmate"]:
+                winner = "black" if self.player_color == "white" else "white"
+                reason = "checkmate"
+
+            await self.end_game(game)
+
+            await self.channel_layer.group_send(
+                self.game_group_name,
+                {
+                    "type": "game_message",
+                    "data": {
+                        "type": "game_over",
+                        "reason": reason,
+                        "winner": winner,
+                    }
+                }
+            )
+
+    async def move_made(self, event):
         await self.send_json({
-            "type": "opponent_move",
+            "type": "move_made",
             "from": event["from"],
             "to": event["to"]
         })
@@ -220,6 +242,15 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             return
 
         return game
+
+    @database_sync_to_async
+    def validate_move(self, fen, from_sq, to_sq):
+        return validate_and_apply_move(fen, from_sq, to_sq)
+
+    @database_sync_to_async
+    def update_game_fen(self, game, new_fen):
+        game.fen = new_fen
+        game.save(update_fields=["fen"])
 
     @database_sync_to_async
     def get_game(self):

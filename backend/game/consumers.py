@@ -90,7 +90,37 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             })
             return
 
-        # Move processing will go here
+        game = await self.get_active_game()
+        if not game:
+            return
+
+        # validate move and change initial fen + save game moves (new model)
+
+        await self.send_json({
+            "type": "move_made",
+            "from": from_square,
+            "to": to_square,
+        })
+
+        await self.channel_layer.group_send(
+                self.game_group_name,
+                {
+                    "type": "opponent_move_message",
+                    "from": from_square,
+                    "to": to_square,
+                    "sender": self.player_color,
+                },
+            )
+
+    async def opponent_move_message(self, event):
+        if event["sender"] == self.player_color:
+            return
+
+        await self.send_json({
+            "type": "opponent_move",
+            "from": event["from"],
+            "to": event["to"]
+        })
 
     async def handle_draw(self):
         game = await self.get_active_game()

@@ -49,7 +49,7 @@ function Game() {
         setGame(chess)
         setColor(data.color)
       }
-      if (data.type === "move_made" || data.type === "opponent_move") {
+      if (data.type === "move_made") {
         setGame(prev => {
           if (!prev) return prev
           const next = new Chess(prev.fen())

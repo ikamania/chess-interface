@@ -4,6 +4,7 @@ import { Chess } from "chess.js"
 import { createGameSocket } from "../websocket/gameSocket"
 import type { ServerMessage, PromotionPiece } from "../websocket/gameSocket"
 import ChessBoard from "../components/board/ChessBoard"
+import { makeMove } from "../logic/move"
 import { toSquare } from "../utils/coordinates"
 import Loading from "./Loading"
 
@@ -12,6 +13,8 @@ function Game() {
   const navigate = useNavigate()
 
   const socketRef = useRef<ReturnType<typeof createGameSocket> | null>(null)
+  const lastLocalMoveRef = useRef<string | null>(null)
+  const prevFenRef = useRef<string | null>(null)
 
   const [game, setGame] = useState<Chess | null>(null)
   const [color, setColor] = useState<"white" | "black">("white")
@@ -50,6 +53,14 @@ function Game() {
         setColor(data.color)
       }
       if (data.type === "move_made") {
+        const signature = `${data.from}:${data.to}:${data.promotion ?? ""}`
+
+        if (signature === lastLocalMoveRef.current) {
+          lastLocalMoveRef.current = null
+          prevFenRef.current = null
+          return
+        }
+
         setGame(prev => {
           if (!prev) return prev
           const next = new Chess(prev.fen())
@@ -60,6 +71,18 @@ function Game() {
           })
           return next
         })
+      }
+      if (data.type === "error") {
+        if (lastLocalMoveRef.current) {
+          lastLocalMoveRef.current = null
+
+          const fen = prevFenRef.current
+          prevFenRef.current = null
+
+          if (fen) {
+            setGame(new Chess(fen))
+          }
+        }
       }
       if (data.type === "draw_offer") {
         setDrawOffer("received")
@@ -91,8 +114,21 @@ function Game() {
       to: [number, number],
       promotion?: PromotionPiece,
     ) => {
+      if (!game) return
+
       const fromSq = toSquare(from[0], from[1])
       const toSq = toSquare(to[0], to[1])
+
+      const next = new Chess(game.fen())
+      const move = makeMove(next, from, to, promotion)
+
+      if (!move) return
+
+      prevFenRef.current = game.fen()
+      lastLocalMoveRef.current = `${fromSq}:${toSq}:${promotion ?? ""}`
+
+      setGame(next)
+
       socketRef.current?.send({
         type: "move",
         from: fromSq,
@@ -100,7 +136,7 @@ function Game() {
         promotion,
       })
     },
-    [],
+    [game],
   )
 
   function sendMessage(type: "draw" | "resign") {
@@ -133,8 +169,8 @@ function Game() {
         return "Stalemate";
       case "checkmate":
         return gameOver.winner === color
-          ? "Won by checkmate"
-          : "Lost by checkmate"
+          ? "WON BY CHECKMATE"
+          : "LOST BY CHECKMATE"
       case "resignation":
         return gameOver.winner === color
           ? "Opponent resigned"

@@ -52,6 +52,10 @@ export type ServerMessage =
       reason: string
       winner: "white" | "black" | null
     }
+  | {
+      type: "error"
+      message: string
+    }
 
 export function createGameSocket(
   gameId: string,

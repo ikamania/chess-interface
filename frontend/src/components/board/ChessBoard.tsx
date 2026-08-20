@@ -1,14 +1,20 @@
 import type { Chess, Color } from "chess.js"
 import Square from "./Square"
 import Piece from "./Piece"
+import PromotionDialog from "./PromotionDialog"
 import { useChessDrag } from "../../hooks/useChessDrag"
+import type { PromotionPiece } from "../../websocket/gameSocket"
 
 
 type Props = {
   game: Chess
   playerColor: Color
   orientation: "white" | "black"
-  onMove: (from: [number, number], to: [number, number]) => void
+  onMove: (
+    from: [number, number],
+    to: [number, number],
+    promotion?: PromotionPiece,
+  ) => void
 }
 
 
@@ -16,9 +22,12 @@ export default function ChessBoard({ game, playerColor, orientation, onMove }: P
   const {
     dragging,
     legalTargets,
+    pendingPromotion,
     onPointerDown,
     onPointerMove,
     onPointerUp,
+    resolvePromotion,
+    cancelPromotion,
     cancelDrag,
   } = useChessDrag(game, playerColor, onMove)
 
@@ -72,6 +81,16 @@ export default function ChessBoard({ game, playerColor, orientation, onMove }: P
         >
           <Piece piece={dragging.piece} color={dragging.color} />
         </div>
+      )}
+
+      {pendingPromotion && (
+        <PromotionDialog
+          color={playerColor}
+          viewRow={orientation === "white" ? pendingPromotion.to[0] : 7 - pendingPromotion.to[0]}
+          viewCol={orientation === "white" ? pendingPromotion.to[1] : 7 - pendingPromotion.to[1]}
+          onSelect={resolvePromotion}
+          onCancel={cancelPromotion}
+        />
       )}
     </div>
   )

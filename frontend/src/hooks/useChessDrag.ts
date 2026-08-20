@@ -1,7 +1,8 @@
 import { useState } from "react"
 import type { Chess, Color, PieceSymbol } from "chess.js"
 import { isLegalMove, getLegalMoves } from "../logic/rules"
-import { fromSquare } from "../utils/coordinates"
+import { fromSquare, toSquare } from "../utils/coordinates"
+import type { PromotionPiece } from "../websocket/gameSocket"
 
 
 type Dragging = {
@@ -13,14 +14,36 @@ type Dragging = {
   y: number
 } | null
 
+type PendingPromotion = {
+  from: [number, number]
+  to: [number, number]
+} | null
+
 
 export function useChessDrag(
   game: Chess,
   playerColor: Color,
-  onMove: (from: [number, number], to: [number, number]) => void,
+  onMove: (
+    from: [number, number],
+    to: [number, number],
+    promotion?: PromotionPiece,
+  ) => void,
 ) {
   const [dragging, setDragging] = useState<Dragging>(null)
   const [legalTargets, setLegalTargets] = useState<[number, number][]>([])
+  const [pendingPromotion, setPendingPromotion] = useState<PendingPromotion>(null)
+
+  function isPromotionMove(
+    from: [number, number],
+    to: [number, number],
+  ): boolean {
+    const fromSq = toSquare(from[0], from[1])
+    const toSq = toSquare(to[0], to[1])
+
+    return game
+      .moves({ square: fromSq, verbose: true })
+      .some(m => m.to === toSq && m.promotion !== undefined)
+  }
 
   function onPointerDown(
     e: React.PointerEvent,
@@ -62,11 +85,26 @@ export function useChessDrag(
     const to: [number, number] = [row, col]
 
     if (isLegalMove(game, from, to)) {
-      onMove(from, to)
+      if (isPromotionMove(from, to)) {
+        setPendingPromotion({ from, to })
+      } else {
+        onMove(from, to)
+      }
     }
 
     setDragging(null)
     setLegalTargets([])
+  }
+
+  function resolvePromotion(piece: PromotionPiece) {
+    if (!pendingPromotion) return
+
+    onMove(pendingPromotion.from, pendingPromotion.to, piece)
+    setPendingPromotion(null)
+  }
+
+  function cancelPromotion() {
+    setPendingPromotion(null)
   }
 
   function cancelDrag() {
@@ -77,9 +115,12 @@ export function useChessDrag(
   return {
     dragging,
     legalTargets,
+    pendingPromotion,
     onPointerDown,
     onPointerMove,
     onPointerUp,
+    resolvePromotion,
+    cancelPromotion,
     cancelDrag,
   }
 }

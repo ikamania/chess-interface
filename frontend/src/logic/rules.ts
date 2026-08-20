@@ -1,8 +1,9 @@
 import type { Chess } from "chess.js"
+import type { Square } from "chess.js"
 import { toSquare } from "../utils/coordinates"
 
 
-export function getLegalMoves(game: Chess, from: [number, number]): string[] {
+export function getLegalMoves(game: Chess, from: [number, number]): Square[] {
   const square = toSquare(from[0], from[1])
   return game.moves({ square, verbose: true }).map(m => m.to)
 }

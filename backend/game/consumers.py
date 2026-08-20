@@ -124,7 +124,7 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
             reason = "stalemate"
 
             if result["is_checkmate"]:
-                winner = "black" if self.player_color == "white" else "white"
+                winner = "white" if self.player_color == "white" else "black"
                 reason = "checkmate"
 
             await self.end_game(game)

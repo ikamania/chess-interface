@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { Chess } from "chess.js"
 import { createGameSocket } from "../websocket/gameSocket"
-import type { ServerMessage } from "../websocket/gameSocket"
+import type { ServerMessage, PromotionPiece } from "../websocket/gameSocket"
 import ChessBoard from "../components/board/ChessBoard"
 import { toSquare } from "../utils/coordinates"
 import Loading from "./Loading"
@@ -53,7 +53,11 @@ function Game() {
         setGame(prev => {
           if (!prev) return prev
           const next = new Chess(prev.fen())
-          next.move({ from: data.from, to: data.to })
+          next.move({
+            from: data.from,
+            to: data.to,
+            promotion: data.promotion ?? undefined,
+          })
           return next
         })
       }
@@ -82,13 +86,18 @@ function Game() {
   }, [id, navigate])
 
   const sendMove = useCallback(
-    (from: [number, number], to: [number, number]) => {
+    (
+      from: [number, number],
+      to: [number, number],
+      promotion?: PromotionPiece,
+    ) => {
       const fromSq = toSquare(from[0], from[1])
       const toSq = toSquare(to[0], to[1])
       socketRef.current?.send({
         type: "move",
         from: fromSq,
         to: toSq,
+        promotion,
       })
     },
     [],

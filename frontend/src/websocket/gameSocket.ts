@@ -1,5 +1,7 @@
 import { GAME_WS_URL } from "../config"
 
+export type PromotionPiece = "q" | "r" | "b" | "n"
+
 export type GameMessage =
   | {
       type: "resign"
@@ -16,6 +18,7 @@ export type GameMessage =
       type: "move"
       from: string
       to: string
+      promotion?: PromotionPiece
     }
 
 export type ServerMessage =
@@ -30,11 +33,13 @@ export type ServerMessage =
       type: "move_made"
       from: string
       to: string
+      promotion?: PromotionPiece | null
     }
   | {
       type: "opponent_move"
       from: string
       to: string
+      promotion?: PromotionPiece | null
     }
   | {
       type: "draw_offer"

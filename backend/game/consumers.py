@@ -83,6 +83,7 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
     async def handle_move(self, content):
         from_square = content.get("from")
         to_square = content.get("to")
+        promotion = content.get("promotion")
 
         if not from_square or not to_square:
             await self.send_json({
@@ -95,7 +96,9 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         if not game:
             return
 
-        result = await self.validate_move(game.fen, from_square, to_square)
+        result = await self.validate_move(
+            game.fen, from_square, to_square, promotion
+        )
 
         if not result["valid"]:
             await self.send_json({
@@ -112,6 +115,7 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
                 "type": "move_made",
                 "from": from_square,
                 "to": to_square,
+                "promotion": promotion,
             },
         )
 
@@ -141,7 +145,8 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         await self.send_json({
             "type": "move_made",
             "from": event["from"],
-            "to": event["to"]
+            "to": event["to"],
+            "promotion": event.get("promotion"),
         })
 
     async def handle_draw(self):
@@ -244,8 +249,8 @@ class GameConsumer(AsyncJsonWebsocketConsumer):
         return game
 
     @database_sync_to_async
-    def validate_move(self, fen, from_sq, to_sq):
-        return validate_and_apply_move(fen, from_sq, to_sq)
+    def validate_move(self, fen, from_sq, to_sq, promotion=None):
+        return validate_and_apply_move(fen, from_sq, to_sq, promotion)
 
     @database_sync_to_async
     def update_game_fen(self, game, new_fen):
